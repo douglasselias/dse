@@ -12,8 +12,9 @@ rmdir /S /Q .\build
 mkdir build
 pushd .\build
 
-cl /nologo /Zi ..\main.c
+@REM cl /P /nologo ..\main.c
+cl /nologo /diagnostics:caret /WX /W4 /wd4996 /wd4100 /wd4244 ..\main.c
 
-main.exe -s for
+main.exe -s for -t sum_test
 
 popd

@@ -2,10 +2,67 @@
 
 // Add a how to use
 
+
 #ifndef DSE_TESTER_H
 #define DSE_TESTER_H
 
+#include<string.h>
+#include<stdlib.h>
+#define WIN32_LEAN_AND_MEAN
+#include<windows.h>
+
+bool has_substring(const char* haystack, const char* needle);
+
 #ifdef DSE_TESTER_IMPLEMENTATION
+
+bool has_substring(const char* haystack, const char* needle) {
+  size_t haystack_length = strlen(haystack);
+  size_t needle_length = strlen(needle);
+  if(needle_length == 0) return true;
+  if(haystack_length < needle_length) return false;
+  int haystack_index = 0;
+  int needle_index = 0;
+
+  for(; haystack_index < haystack_length; ) {
+    if(tolower(haystack[haystack_index]) == tolower(needle[needle_index])) {
+      needle_index++;
+      if(needle_index < needle_length) {
+        haystack_index++;
+      } else return true;
+    } else {
+      haystack_index++;
+    }
+  }
+
+  return false;
+}
+
+typedef void(*dse_test_function)();
+dse_test_function dse_functions[10] = {0};
+int dse_function_index = 0;
+
+void dse_register(dse_test_function f) {
+  dse_functions[dse_function_index++] = f;
+}
+
+char* read_entire_file() {
+  FILE* file = fopen("../main.c", "rb");
+  if(file == NULL) puts("File 404");
+  fseek(file, 0, SEEK_END);
+  size_t size = ftell(file);
+  printf("SIZE: %zd\n", size);
+  fseek(file, 0, SEEK_SET);
+
+  char* string = malloc(size + 1);
+  fread(string, size, 1, file);
+  fclose(file);
+
+  string[size] = '\0';
+  return string;
+}
+
+char* dse_suite_query = "";
+char* dse_test_query = "";
 
 int dse_total_tests = 0;
 int dse_total_tests_skipped = 0;
@@ -45,11 +102,38 @@ int dse_total_tests_passed = 0;
   clock_t end = clock(); \
   printf("%s was executed in %2.3f seconds\n", #function, (double)(end - start) / CLOCKS_PER_SEC); \
 
+#define DSE_HIGHRES_TIMER(function) \
+  LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds; \
+  LARGE_INTEGER Frequency; \
+  QueryPerformanceFrequency(&Frequency); \
+  QueryPerformanceCounter(&StartingTime); \
+  function(); \
+  QueryPerformanceCounter(&EndingTime); \
+  ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart; \
+  ElapsedMicroseconds.QuadPart *= 1000000; \
+  ElapsedMicroseconds.QuadPart /= Frequency.QuadPart; \
+  printf("%s was executed in %2.3f microseconds, %2.3f seconds\n", #function, (double)ElapsedMicroseconds.QuadPart, (double)(ElapsedMicroseconds.QuadPart/1000000)); \
+
 #define DSE_START_SUITE(name) \
   void name() { \
+    if(has_substring(#name, dse_suite_query) == false) return; \
     printf("Suite: %s\n", #name); \
 
 #define DSE_END_SUITE() }
+
+#define DSE_START_TEST(name) \
+  void name() { \
+    if(has_substring(#name, dse_test_query) == false) return; \
+    printf("Test: %s\n", #name); \
+
+#define DSE_END_TEST() } \
+
+#define DSE_START_TEST_SUITE(name) \
+  for(;;) { \
+    if(has_substring(#name, dse_test_query) == false) break; \
+    printf("Test Suite: %s\n", #name); \
+
+#define DSE_END_TEST_SUITE() break; }
 
 #endif // DSE_TESTER_IMPLEMENTATION
 #endif // DSE_TESTER_H
