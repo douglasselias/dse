@@ -25,7 +25,7 @@ char to_lowercase(char c) {
 
 dse_u64 string_length(const char* string) {
   dse_u64 length = 0;
-  while(*string != '\0') length++;
+  while(*string++ != '\0') length++;
   return length;
 }
 
@@ -37,13 +37,14 @@ bool has_substring(const char* haystack, const char* needle) {
   dse_u64 haystack_index = 0;
   dse_u64 needle_index = 0;
 
-  for(; haystack_index < haystack_length; ) {
+  while(haystack_index < haystack_length) {
     if(to_lowercase(haystack[haystack_index]) == to_lowercase(needle[needle_index])) {
       needle_index++;
       if(needle_index < needle_length) {
         haystack_index++;
       } else return true;
     } else {
+      needle_index = 0;
       haystack_index++;
     }
   }
@@ -86,24 +87,24 @@ dse_u64 dse_total_tests_failed = 0;
 
 #define DSE_PRINT_RESULTS() \
   puts(""); \
-  printf("Total tests:\t%d\n", dse_total_tests); \
-  printf("Total skipped:\t%d\n", dse_total_tests_skipped); \
-  printf("Total failed:\t%d\n", dse_total_tests_failed); \
+  printf("Total tests:\t%lld\n", dse_total_tests); \
+  printf("Total skipped:\t%lld\n", dse_total_tests_skipped); \
+  printf("Total failed:\t%lld\n", dse_total_tests_failed); \
   dse_u64 dse_total_tests_passed = dse_total_tests - dse_total_tests_skipped - dse_total_tests_failed; \
-  printf("Total passed:\t%d\n", dse_total_tests_passed); \
+  printf("Total passed:\t%lld\n", dse_total_tests_passed); \
 
 /// @todo: Maybe I could filter the tests when generating the file, instead of having the if statement on the macro.
 #define DSE_SUITE(name, code) \
   void name() { \
     if(has_substring(#name, dse_suite_query) == false) return; \
-    printf("Suite: %s\n", #name); \
+    printf("\033[95mSuite: %s\033[0m\n", #name); \
     code \
   } \
 
 #define DSE_SUITE_TEST(name, code) \
   for(;;) { \
     if(has_substring(#name, dse_test_query) == false) break; \
-    printf("\tSuite Test: %s\n", #name); \
+    printf("\033[95m%s\033[0m\n", #name); \
     code \
     break; \
   } \
@@ -111,7 +112,7 @@ dse_u64 dse_total_tests_failed = 0;
 #define DSE_TEST(name, code) \
   void name() { \
     if(has_substring(#name, dse_test_query) == false) return; \
-    printf("Test: %s\n", #name); \
+    printf("\033[96m%s\033[0m\n", #name); \
     code \
   } \
 

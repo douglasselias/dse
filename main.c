@@ -4,8 +4,6 @@
 #include<time.h>
 #include<string.h>
 
-/// @todo: Remove strsafe header
-#include<strsafe.h>
 #define WIN32_LEAN_AND_MEAN
 #include<windows.h>
 
@@ -65,29 +63,30 @@ char* list_of_filenames[100] = {0};
 int list_of_filesizes[100] = {0};
 int insert_index = 0;
 
-void list_files_from_dir();
+void list_files_from_dir(const char* path);
 
 void list_files_from_dir(const char* path) {
+  char szDir[MAX_PATH];
+  /// @todo: Remove strcpy, strcat
+  strcpy(szDir, path);
+  strcat(szDir, "\\*");
+
   WIN32_FIND_DATA ffd;
-  TCHAR szDir[MAX_PATH];
-
-  StringCchCopy(szDir, MAX_PATH, path);
-  StringCchCat(szDir, MAX_PATH, "\\*");
-
   HANDLE hFind = FindFirstFile(szDir, &ffd);
 
   if(INVALID_HANDLE_VALUE == hFind) {
-    puts("<> invalid file...");
+    puts("Invalid file.");
     return;
   }
 
   do {
     if(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
       if(ffd.cFileName[0] != '.') {
-        TCHAR dir_buffer[MAX_PATH];
-        StringCchCopy(dir_buffer, MAX_PATH, path);
-        StringCchCat(dir_buffer, MAX_PATH, "\\");
-        StringCchCat(dir_buffer, MAX_PATH, ffd.cFileName);
+        char dir_buffer[MAX_PATH];
+        strcpy(dir_buffer, path);
+        strcat(dir_buffer, "\\");
+        strcat(dir_buffer, ffd.cFileName);
+        // puts(dir_buffer);
         list_files_from_dir(dir_buffer);
       }
     } else {
@@ -98,9 +97,9 @@ void list_files_from_dir(const char* path) {
         // printf("<FILE>\t%s\\%s\t\t%lld bytes\n", path, ffd.cFileName, filesize.QuadPart);
         list_of_filenames[insert_index] = calloc(sizeof(char), (string_length(path) + string_length(ffd.cFileName) + 2)); // one slash between '..' and the file, and the null terminator.
 
-        StringCchCat(list_of_filenames[insert_index], MAX_PATH, path);
-        StringCchCat(list_of_filenames[insert_index], MAX_PATH, "/");
-        StringCchCat(list_of_filenames[insert_index], MAX_PATH, ffd.cFileName);
+        strcat(list_of_filenames[insert_index], path);
+        strcat(list_of_filenames[insert_index], "/");
+        strcat(list_of_filenames[insert_index], ffd.cFileName);
 
         /// @note: Convert backwards slash to forward slash
         int i = 0;
@@ -113,6 +112,7 @@ void list_files_from_dir(const char* path) {
         }
 
         list_of_filesizes[insert_index] = filesize.QuadPart;
+        puts(list_of_filenames[insert_index]);
         insert_index++;
       }
     }
@@ -122,72 +122,34 @@ void list_files_from_dir(const char* path) {
 typedef struct {
   char* name;
 } TestInfo;
-
+/// @todo: Hardcoded size.
 TestInfo test_infos[1000] = {0};
 int test_info_index = 0;
 
 void extract_name_of_test(char* text) {
-  // int i = 0;
-
-  // while(i < text_length && text[i] != 'D' && text[i+1] != 'S' && text[i+2] != 'E') {
-  //   i++;
-  // }
-  // if(text[i+4] == 'S')
-
-  // size_t text_length = string_length(text);
-
-  // int position = strstr(text, "DSE_SUITE(") - text;
-
   char* test_name = calloc(sizeof(char), 100);
+  /// @todo: Replace strtok
   char* line = strtok(text, "\n");
 
   while(line != NULL) {
-    // printf(" %s\n", line);
     if(has_substring(line, "DSE_SUITE(")
     || has_substring(line, "DSE_TEST(")) {
-      int parenthesis_index = char_index(line, '(');
+      // printf("Line: %s | %s\n", line, has_substring(line, "DSE_TEST(") ? "true" : "false");
+      // printf("Line: %s\n", line);
+      // printf("Is SUITE: %s\n", has_substring(line, "DSE_SUITE(") ? "true" : "false");
+      // printf("Is TEST: %s\n", has_substring(line, "DSE_TEST(") ? "true" : "false");
+      // puts("--------------");
+      int parenthesis_index = char_index(line, '(') + 1;
       int coma_index = char_index(line, ',');
 
       test_infos[test_info_index].name = calloc(sizeof(char), 100);
-      memcpy(test_infos[test_info_index].name, text + parenthesis_index, coma_index);
+      memcpy(test_infos[test_info_index].name, line + parenthesis_index, coma_index - parenthesis_index);
+      // printf("Test Name: %s\n", test_infos[test_info_index].name);
       test_info_index++;
     }
 
     line = strtok(NULL, "\n");
   }
-
-
-  // if(text[i] == '@') {
-  //   if(text[i+1] == 't') {
-  //     char* current_offset = text + i + string_length("@test(");
-  //     int index = char_index(current_offset, ')');
-
-  //     memcpy(test_name, current_offset, index);
-
-  //     // printf(">> TestName:(%s)\n", test_name);
-
-  //     test_infos[test_info_index].name = calloc(sizeof(char), 100);
-  //     test_infos[test_info_index].name = strdup(test_name);
-  //     test_info_index++;
-  //   } else if(text[i+1] == 's') {
-  //     char* current_offset = text + i + string_length("@suite(");
-  //     int index = char_index(current_offset, ')');
-
-  //     memcpy(test_name, current_offset, index);
-  //     for(int j = 0; j < 100; j++) {
-  //       if(test_name[j] == ' ') test_name[j] = '_';
-  //     }
-  //     // printf(">> SuiteName:(%s)\n", test_name);
-  //     /// @todo: Not robust. A suite has other blocks inside.
-  //     int index_end = char_index(current_offset, '}');
-  //     memcpy(test_body, current_offset + index, index_end);
-  //     // test_infos[test_info_index++] = (TestInfo){test_name, test_body};
-  //   }
-  // }
-
-  // // for(int index = 0; index < 100; index++) {
-  //   // if(test_name[index] == ' ') test_name[index] = '_';
-  // // }
 }
 
 int main(int argc, char* argv[]) {
@@ -197,35 +159,28 @@ int main(int argc, char* argv[]) {
 
   printf("This system has %d processors\n", count_threads());
 
+  puts("Listing files...");
   list_files_from_dir("..");
 
-  /// @todo: The user should be able to specify the path
+  puts("Generating file...");
   FILE* generated_file = fopen("../build/generated.c", "w");
 
-  fprintf(generated_file, "#include \"dse_tester.h\"\n");
+  fprintf(generated_file, "#include \"../dse_tester.h\"\n");
   // fprintf(generated_file, "#include \"code.c\"\n");
 
+  /// @todo: Hardcoded number of filenames.
   for(int i = 0; i < 100; i++) {
     if(list_of_filenames[i]) {
-      // fprintf(generated_file, "#include \"%s\"\n", list_of_filenames[i]);
-
-      // printf("Extracting FILE contents: %s\n", list_of_filenames[i]);
+      fprintf(generated_file, "#include \"%s\"\n", list_of_filenames[i]);
       char* file_text = read_entire_file(list_of_filenames[i]);
       extract_name_of_test(file_text);
     }
   }
 
-  for(int i = 0; i < 100; i++) {
-    TestInfo test_info = test_infos[i];
-    if(test_info.name != NULL) {
-      printf("Inserting Test info: Name: %s\n", test_infos[i].name);
-      // fprintf(generated_file, "\nvoid %s()", test_info.name);
-    }
-  }
+  fprintf(generated_file, "\nint main() {");
 
-  fprintf(generated_file, "int main() {");
-
-  for(int i = 0; i < 100; i++) {
+  /// @todo: Hardcoded number of function pointers.
+  for(int i = 0; i < 1000; i++) {
     TestInfo test_info = test_infos[i];
     if(test_info.name != NULL) {
       fprintf(generated_file, "\n\tdse_functions[dse_functions_index++] = %s;", test_info.name);
@@ -234,8 +189,8 @@ int main(int argc, char* argv[]) {
 
   /// @todo: Hardcoded number of function pointers.
   /// @todo: Make it multithreaded.
-  fprintf(generated_file, "\n\n\tfor(int i = 0; i < 100; i++) {");
-  fprintf(generated_file, "\n\t\tif(dse_functions[i]) dse_functions[i]();");
+  fprintf(generated_file, "\n\n\tfor(int dse_i = 0; dse_i < 1000; dse_i++) {");
+  fprintf(generated_file, "\n\t\tif(dse_functions[dse_i]) dse_functions[dse_i]();");
   fprintf(generated_file, "\n\t}");
 
   fprintf(generated_file, "\n\n\tDSE_PRINT_RESULTS();");
@@ -243,27 +198,7 @@ int main(int argc, char* argv[]) {
   fprintf(generated_file, "\n\treturn 0;\n}");
   fclose(generated_file);
 
-  /// @todo: User can specify the path of generated.c file.
-  // system("cd ..");
-  // chdir("..");
-  // SetCurrentDirectory("..");
-  // system("dir");
-  system("cl /nologo /diagnostics:caret /Wall /WX /W4 /wd5045 /wd4255 /wd4996 /wd4100 /wd4244 generated.c");
+  puts("Executing compiler...");
+  system("cl /nologo /diagnostics:caret /Wall /WX /W4 /wd4464 /wd5045 /wd4255 /wd4996 /wd4100 /wd4244 generated.c");
   system("generated.exe");
-
-  // char* file_text = read_entire_file("../main.c");
-  // const char* s = "\n";
-  // char *token = strtok(file_text, s);
-   
-  // while(token != NULL) {
-  //   const char* test_token = "DSE_START_TEST(";
-  //   if(token[0] == 'D' && has_substring(token, test_token)) {
-  //     printf("%s\n", token);
-  //     char buffer[100];
-  //     int index = strchr(token,'(') - token + 1;
-  //     memcpy(buffer, token+index, strlen(token) - strlen(test_token) - strlen(");\n"));
-  //     printf("%s\n", buffer);
-  //   }
-  //   token = strtok(NULL, s);
-  // }
 }
