@@ -1,25 +1,44 @@
 #ifndef DSE_TESTER_H
 #define DSE_TESTER_H
 
-#include<string.h>
-#include<stdlib.h>
 #include<stdio.h>
 #include<stdbool.h>
-#define WIN32_LEAN_AND_MEAN
-#include<windows.h>
+#include<stdint.h>
 
-bool has_substring(const char* haystack, const char* needle);
+/// @todo: Remove unused types.
+// typedef int8_t   dse_s8;
+// typedef int16_t  dse_s16;
+// typedef int32_t  dse_s32;
+// typedef int64_t  dse_s64;
+// typedef uint8_t  dse_u8;
+// typedef uint16_t dse_u16;
+// typedef uint32_t dse_u32;
+typedef uint64_t dse_u64;
+// typedef float    dse_f32;
+// typedef double   dse_f64;
+
+char to_lowercase(char c) {
+  if('A' <= c && c <= 'Z') {
+    return c + 32;
+  } else return c;
+}
+
+dse_u64 string_length(const char* string) {
+  dse_u64 length = 0;
+  while(*string != '\0') length++;
+  return length;
+}
 
 bool has_substring(const char* haystack, const char* needle) {
-  size_t haystack_length = strlen(haystack);
-  size_t needle_length = strlen(needle);
+  dse_u64 haystack_length = string_length(haystack);
+  dse_u64 needle_length = string_length(needle);
   if(needle_length == 0) return true;
   if(haystack_length < needle_length) return false;
-  size_t haystack_index = 0;
-  size_t needle_index = 0;
+  dse_u64 haystack_index = 0;
+  dse_u64 needle_index = 0;
 
   for(; haystack_index < haystack_length; ) {
-    if(tolower(haystack[haystack_index]) == tolower(needle[needle_index])) {
+    if(to_lowercase(haystack[haystack_index]) == to_lowercase(needle[needle_index])) {
       needle_index++;
       if(needle_index < needle_length) {
         haystack_index++;
@@ -32,37 +51,19 @@ bool has_substring(const char* haystack, const char* needle) {
   return false;
 }
 
-typedef void(*dse_test_function)();
-dse_test_function dse_functions[100] = {0};
-int dse_function_index = 0;
+typedef void (*dse_test_function)();
+/// @todo: What is the maximum number possible on the stack?
+#define dse_test_functions_total 1000
+dse_test_function dse_functions[dse_test_functions_total] = {0};
+dse_u64 dse_functions_index = 0;
 
-void dse_register(dse_test_function f) {
-  dse_functions[dse_function_index++] = f;
-}
-
-char* read_entire_file(const char* path) {
-  FILE* file = fopen(path, "rb");
-  if(file == NULL) puts("File 404");
-  fseek(file, 0, SEEK_END);
-  size_t size = ftell(file);
-  // printf("SIZE: %zd\n", size);
-  fseek(file, 0, SEEK_SET);
-
-  char* string = malloc(size + 1);
-  fread(string, size, 1, file);
-  fclose(file);
-
-  string[size] = '\0';
-  return string;
-}
-
+/// @todo: Is this the right place for these?
 char* dse_suite_query = "";
 char* dse_test_query = "";
 
-int dse_total_tests = 0;
-int dse_total_tests_skipped = 0;
-int dse_total_tests_failed = 0;
-int dse_total_tests_passed = 0;
+dse_u64 dse_total_tests = 0;
+dse_u64 dse_total_tests_skipped = 0;
+dse_u64 dse_total_tests_failed = 0;
 
 #define DSE_ASSERT(expression, ...) \
   dse_total_tests++; \
@@ -74,8 +75,7 @@ int dse_total_tests_passed = 0;
     puts(""); \
   } else { \
     printf("\033[32mPASSED\033[0m\t"); \
-    printf("Line: %s:%d  ", __FILE__, __LINE__); \
-    puts(""); \
+    printf("Line: %s:%d  \n", __FILE__, __LINE__); \
   } \
 
 #define DSE_SKIP(expression) \
@@ -89,22 +89,30 @@ int dse_total_tests_passed = 0;
   printf("Total tests:\t%d\n", dse_total_tests); \
   printf("Total skipped:\t%d\n", dse_total_tests_skipped); \
   printf("Total failed:\t%d\n", dse_total_tests_failed); \
-  dse_total_tests_passed = dse_total_tests - dse_total_tests_skipped - dse_total_tests_failed; \
+  dse_u64 dse_total_tests_passed = dse_total_tests - dse_total_tests_skipped - dse_total_tests_failed; \
   printf("Total passed:\t%d\n", dse_total_tests_passed); \
 
-#define DSE_START_SUITE(name) \
+/// @todo: Maybe I could filter the tests when generating the file, instead of having the if statement on the macro.
+#define DSE_SUITE(name, code) \
   void name() { \
     if(has_substring(#name, dse_suite_query) == false) return; \
     printf("Suite: %s\n", #name); \
+    code \
+  } \
 
-#define DSE_START_TEST(name) \
+#define DSE_SUITE_TEST(name, code) \
+  for(;;) { \
+    if(has_substring(#name, dse_test_query) == false) break; \
+    printf("\tSuite Test: %s\n", #name); \
+    code \
+    break; \
+  } \
+
+#define DSE_TEST(name, code) \
   void name() { \
     if(has_substring(#name, dse_test_query) == false) return; \
     printf("Test: %s\n", #name); \
-
-#define DSE_START_TEST_SUITE(name) \
-  for(;;) { \
-    if(has_substring(#name, dse_test_query) == false) break; \
-    printf("Test Suite: %s\n", #name); \
+    code \
+  } \
 
 #endif // DSE_TESTER_H

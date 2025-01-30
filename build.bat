@@ -13,7 +13,7 @@ mkdir build
 pushd .\build
 
 @REM cl /P /nologo ..\main.c
-cl /nologo /diagnostics:caret /WX /W4 /wd4996 /wd4100 /wd4244 ..\main.c
+cl /nologo /diagnostics:caret /WX /W4 /wd4189 /wd4996 /wd4100 /wd4244 ..\main.c
 
 main.exe -s for -t sum_test
 
