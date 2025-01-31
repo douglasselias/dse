@@ -1,9 +1,12 @@
-#ifndef DSE_TESTER_H
-#define DSE_TESTER_H
-
 #include<stdio.h>
-#include<stdbool.h>
+#include<stdlib.h>
 #include<stdint.h>
+
+/// @todo: Move this to os.h
+#define WIN32_LEAN_AND_MEAN
+#include<windows.h>
+
+///@todo: Prefix everything!!!
 
 /// @todo: Remove unused types.
 // typedef int8_t   dse_s8;
@@ -14,8 +17,10 @@
 // typedef uint16_t dse_u16;
 // typedef uint32_t dse_u32;
 typedef uint64_t dse_u64;
-// typedef float    dse_f32;
-// typedef double   dse_f64;
+
+#define bool _Bool
+#define true  1
+#define false 0
 
 char to_lowercase(char c) {
   if('A' <= c && c <= 'Z') {
@@ -27,6 +32,13 @@ dse_u64 string_length(const char* string) {
   dse_u64 length = 0;
   while(*string++ != '\0') length++;
   return length;
+}
+
+void copy_string(const char* source, char* destination) {
+  dse_u64 source_length = string_length(source);
+  for(dse_u64 i = 0; i < source_length; i++) {
+    destination[i] = source[i];
+  }
 }
 
 bool has_substring(const char* haystack, const char* needle) {
@@ -53,23 +65,21 @@ bool has_substring(const char* haystack, const char* needle) {
 }
 
 typedef void (*dse_test_function)();
-/// @todo: What is the maximum number possible on the stack?
 #define dse_test_functions_total 1000
 dse_test_function dse_functions[dse_test_functions_total] = {0};
 dse_u64 dse_functions_index = 0;
 
-/// @todo: Is this the right place for these?
-char* dse_suite_query = "";
-char* dse_test_query = "";
+char dse_suite_query[50] = {0};
+char dse_test_query[50] = {0};
 
-dse_u64 dse_total_tests = 0;
-dse_u64 dse_total_tests_skipped = 0;
-dse_u64 dse_total_tests_failed = 0;
+LONG64 dse_total_tests = 0;
+LONG64 dse_total_tests_skipped = 0;
+LONG64 dse_total_tests_failed = 0;
 
 #define DSE_ASSERT(expression, ...) \
-  dse_total_tests++; \
+  InterlockedIncrement64(&dse_total_tests); \
   if(!(expression)) { \
-    dse_total_tests_failed++; \
+    InterlockedIncrement64(&dse_total_tests_failed); \
     printf("\033[31mFAILED\033[0m\t"); \
     printf("Line: %s:%d  ", __FILE__, __LINE__); \
     printf("" __VA_ARGS__); \
@@ -81,8 +91,8 @@ dse_u64 dse_total_tests_failed = 0;
 
 #define DSE_SKIP(expression) \
   if(false) { expression } \
-  dse_total_tests_skipped++; \
-  dse_total_tests++; \
+  InterlockedIncrement64(&dse_total_tests_skipped); \
+  InterlockedIncrement64(&dse_total_tests); \
   printf("\033[93mSKIPPED\033[0m\tLine: %s:%d\n", __FILE__, __LINE__); \
 
 #define DSE_PRINT_RESULTS() \
@@ -116,4 +126,39 @@ dse_u64 dse_total_tests_failed = 0;
     code \
   } \
 
-#endif // DSE_TESTER_H
+
+/// @todo: Move these functions to os.h
+int count_threads() {
+  SYSTEM_INFO sysinfo;
+  GetSystemInfo(&sysinfo);
+  return sysinfo.dwNumberOfProcessors;
+}
+
+HANDLE create_thread(LPTHREAD_START_ROUTINE thread_fn, void* thread_args) {
+  LPSECURITY_ATTRIBUTES default_security_attr = NULL;
+  int default_stack_size = 0;
+  return CreateThread(default_security_attr, default_stack_size, thread_fn, thread_args, CREATE_SUSPENDED, NULL);
+}
+
+void wait_all_threads(HANDLE* thread_array, dse_u64 total_threads) {
+  // int total_threads = count_threads() - 1;
+  WaitForMultipleObjects((DWORD)total_threads, thread_array, true, INFINITE);
+}
+
+void start_thread(HANDLE h) {
+  ResumeThread(h);
+}
+
+typedef struct {
+  dse_u64 start_index;
+  dse_u64 end_index;
+} ThreadArgs;
+
+DWORD WINAPI my_thread_fn(LPVOID thread_args) {
+  ThreadArgs args = *(ThreadArgs*)thread_args;
+  for(dse_u64 i = args.start_index; i < args.end_index; i++) {
+		dse_functions[i]();
+	}
+
+  return 0;
+}
