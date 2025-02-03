@@ -1,2 +1,1 @@
-# dse
-Single header libraries in public domain for C/C++ 
+# dse - Single header libraries in public domain for C/C++ 
