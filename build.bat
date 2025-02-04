@@ -8,13 +8,6 @@ if %ERRORLEVEL% neq 0 (
 
 cls
 
+rmdir /S /Q .\build
+
 test_runner.exe
-
-@REM rmdir /S /Q .\build
-@REM mkdir build
-@REM pushd .\build
-
-@REM cl /nologo /diagnostics:caret /WX /W4 /wd4189 /wd4996 /wd4100 /wd4244 ..\string8\main.c
-@REM main.exe
-
-@REM popd

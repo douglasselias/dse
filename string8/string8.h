@@ -1,67 +1,203 @@
 #ifndef DSE_STRING8_H
 #define DSE_STRING8_H
 
-typedef struct {} String8;
+#include<stdbool.h>
+#include<stdint.h>
+
+typedef uint8_t dse_u8;
+typedef uint64_t dse_u64;
+
+typedef struct {
+  char* text;
+  dse_u64 size;
+} String8;
+
 /// String view struct??? {int start, int end, String8* data};
 
+dse_u64 __dse_size(char* s);
+
+#define STR8(string) { string, __dse_size(string) }
+
 /// Should I return or modify in place?
-String8 dse_to_uppercase(String8 s);
-String8 dse_to_lowercase(String8 s);
-String8 dse_to_pascal_case(String8 s);
-String8 dse_to_snake_case(String8 s);
-String8 dse_to_camel_case(String8 s);
-String8 dse_to_kebab_case(String8 s);
+void _dse_to_uppercase(String8 s);
+void _dse_to_lowercase(String8 s);
+void _dse_to_pascal_case(String8 s);
+void dse_to_camel_case(String8 s);
+void dse_to_snake_case(String8 s);
+void dse_to_kebab_case(String8 s);
 
-void dse_string_copy(String8 s, char* ss);
+void _dse_string_copy(char* source, String8* destination);
 
-// Better names!
-int dse_char_code_at(String8 string, int index);
-char dse_code_to_char(int n);
+char _dse_ascii_code_to_char(dse_u8 number);
+dse_u8 _dse_ascii_code_at(String8 string, dse_u8 index);
 
-String8 dse_concat_strings(String8 a, String8 b); /// Should it be va_args?
-String8 dse_append_char(String8 s, char c);
+String8* dse_concat_strings(String8 a, String8 b); /// Should it be va_args?
+void dse_append_char(String8* s, char c);
 
-String8 dse_string_join(String8* array_of_strings, int count, char delim);
+String8* dse_string_join(String8** array_of_strings, dse_u64 count, char delim);
 // String8 dse_string_join(String8* array_of_strings, int count, String8 delim); // ???
 
-String8* dse_string_split(String8 s, char delim);
+// String8* dse_string_split(String8 s, char delim);
 // String8* dse_string_split(String8 s, String* delim); // C does not support function overloading
 
-bool dse_string_includes(String8 string, String8 substring); // has_substring
+// bool dse_string_includes(String8 string, String8 substring); // has_substring
 
-int dse_substring_start_index(String8 string, String8 substring);
-int dse_substring_end_index(String8 string, String8 substring);
+// int dse_substring_start_index(String8 string, String8 substring);
+// int dse_substring_end_index(String8 string, String8 substring);
 
-String8 dse_slice_string(String8 s, int start, int end); /// end should have a default value
+// String8 dse_slice_string(String8 s, int start, int end); /// end should have a default value
 
-String* dse_string_format(String8 format, String8 values); /// Needs to be va_args (similar to sprintf)
+// String* dse_string_format(String8 format, String8 values); /// Needs to be va_args (similar to sprintf)
 
-String8 dse_number_to_string(int n);
+// String8 dse_number_to_string(int n);
 
-String8 dse_string_replace(String8 string, char delim); // Should I return or modify in place?
+// String8 dse_string_replace(String8 string, char delim); // Should I return or modify in place?
 // String8 dse_string_replace(String8 string, String8 delim);
 
-String8 dse_remove_chars(String8 string, char delim);
-String8 dse_remove_strings(String8 string, String8 delim);
+// String8 dse_remove_chars(String8 string, char delim);
+// String8 dse_remove_strings(String8 string, String8 delim);
 
-String8 dse_slugify(String8 string);
+// String8 dse_slugify(String8 string);
 
 // #define slugify dse_slugify
 
-String8 dse_trim(String8 string);
+// String8 dse_trim(String8 string);
 
-int dse_index_of(String8 string, char search); // , int fromIndex); /// char_index
-int dse_last_index_of(String8 string, char search); // , int fromIndex);
+// int dse_index_of(String8 string, char search); // , int fromIndex); /// char_index
+// int dse_last_index_of(String8 string, char search); // , int fromIndex);
 
-bool dse_strings_are_equal(String8 a, String8 b);
+// bool dse_strings_are_equal(String8 a, String8 b);
 
 #ifdef DSE_STRING8_IMPLEMENTATION
 
-int sum(int a, int b) {
-  return a + b;
+dse_u64 __dse_size(char* s) {
+  dse_u64 size = 0;
+  while(*s++ != '\0') size++;
+  return size;
 }
 
-#endif // DSE_TESTER_IMPLEMENTATION
+void _dse_to_uppercase(String8 s) {
+  for(dse_u64 i = 0; i < s.size; i++) {
+    if('a' <= s.text[i] && s.text[i] <= 'z') {
+      s.text[i] -= 32;
+    }
+  }
+}
+
+void _dse_to_lowercase(String8 s) {
+  for(dse_u64 i = 0; i < s.size; i++) {
+    if('A' <= s.text[i] && s.text[i] <= 'Z') {
+      s.text[i] += 32;
+    }
+  }
+}
+
+void _dse_to_pascal_case(String8 s) {
+  bool is_first_letter = true;
+  for(dse_u64 i = 0; i < s.size; i++) {
+    char c = s.text[i];
+    if(c == ' ') {
+      is_first_letter = true;
+      continue;
+    }
+    if('a' <= c && c <= 'z' && is_first_letter) {
+      s.text[i] -= 32;
+      is_first_letter = false;
+    }
+  }
+}
+
+void dse_to_camel_case(String8 s) {}
+
+void dse_to_snake_case(String8 s) {
+  for(dse_u64 i = 0; i < s.size; i++) {
+    if('A' <= s.text[i] && s.text[i] <= 'Z') {
+      s.text[i] += 32;
+    } else if(s.text[i] == ' ') {
+      s.text[i] = '_';
+    }
+  }
+}
+
+void dse_to_kebab_case(String8 s) {
+  for(dse_u64 i = 0; i < s.size; i++) {
+    if('A' <= s.text[i] && s.text[i] <= 'Z') {
+      s.text[i] += 32;
+    } else if(s.text[i] == ' ') {
+      s.text[i] = '-';
+    }
+  }
+}
+
+void _dse_string_copy(char* source, String8* destination) {
+  dse_u64 source_size = __dse_size(source);
+  destination->size = source_size;
+  destination->text = calloc(sizeof(char), source_size);
+
+  for(dse_u64 i = 0; i < source_size; i++) {
+    destination->text[i] = source[i];
+  }
+}
+
+char _dse_ascii_code_to_char(dse_u8 number) {
+  return (char)number;
+}
+
+dse_u8 _dse_ascii_code_at(String8 string, dse_u8 index) {
+  return (dse_u8)string.text[index];
+}
+
+String8* dse_concat_strings(String8 a, String8 b) {
+  dse_u64 total_size = a.size + b.size;
+  String8* result = calloc(sizeof(String8), 1);
+  result->text = calloc(sizeof(char), total_size);
+  result->size = total_size;
+  for(dse_u64 i = 0; i < total_size; i++) {
+    if(i < a.size)
+      result->text[i] = a.text[i];
+    else if(a.size <= i && (i - a.size) < b.size) {
+      result->text[i] = b.text[i - a.size];
+      printf("%c", b.text[i - a.size]);
+    }
+  }
+  return result;
+}
+
+void dse_append_char(String8* s, char c) {
+  s->size++;
+  char* buffer = calloc(sizeof(char), s->size);
+  for(dse_u64 i = 0; i < s->size; i++) {
+    buffer[i] = s->text[i];
+  }
+  buffer[s->size-1] = c;
+  s->text = buffer;
+}
+
+String8* dse_string_join(String8** array_of_strings, dse_u64 count, char delim) {
+  dse_u64 total_size = 0;
+  for(dse_u64 i = 0; i < count; i++) {
+    String8* s = array_of_strings[i];
+    total_size += s->size + 1;
+  }
+  total_size--;
+  String8* result = calloc(sizeof(String8), 1);
+  result->text = calloc(sizeof(char), total_size);
+  result->size = total_size;
+
+  dse_u64 global_index = 0;
+  for(dse_u64 i = 0; i < count; i++) {
+    String8* s = array_of_strings[i];
+    for(dse_u64 j = 0; j < s->size; j++) {
+      result->text[global_index + j] = s->text[j];
+    }
+    global_index += s->size;
+    result->text[global_index++] = delim;
+  }
+
+  return result;
+}
+
+#endif // DSE_STRING8_IMPLEMENTATION
 #endif // DSE_STRING8_H
 
 /*
