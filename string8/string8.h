@@ -53,8 +53,8 @@ String8* dse_slice_string(String8 string, dse_u64 start, dse_u64 end); /// end s
 
 // String* dse_string_format(String8 format, String8 values); /// Needs to be va_args (similar to sprintf)
 
-// String8 dse_number_to_string(int n);
-// int dse_string_to_number(String8 s);
+String8* dse_int_to_string(dse_s64 number);
+dse_s64 dse_string_to_int(String8 string);
 
 // String8 dse_string_replace(String8 string, char delim); // Should I return or modify in place?
 // String8 dse_string_replace(String8 string, String8 delim);
@@ -345,6 +345,31 @@ String8* dse_slice_string(String8 string, dse_u64 start, dse_u64 end) {
   }
 
   return slice;
+}
+
+String8* dse_int_to_string(dse_s64 number) {
+  String8* result = calloc(sizeof(String8), 1);
+  result->text = calloc(sizeof(char), 21);
+  sprintf(result->text, "%lld", number);
+  result->size = __dse_size(result->text);
+  return result;
+}
+
+dse_s64 dse_string_to_int(String8 string) {
+  dse_s64 result = 0;
+  dse_u64 decimal_place = 1;
+
+  for(dse_s64 i = string.size - 1; i >= 0; i--) {
+    dse_u8 n = string.text[i] - 48;
+
+    if(i != (dse_s64)string.size - 1) {
+      decimal_place *= 10;
+    }
+
+    result += n * decimal_place;
+  }
+
+  return result;
 }
 
 #endif // DSE_STRING8_IMPLEMENTATION

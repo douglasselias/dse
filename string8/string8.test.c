@@ -225,3 +225,31 @@ void string_split() {
   DSE_ASSERT(dse_strings_are_equal(*(results[1]), (String8)STR8("world")));
   DSE_ASSERT(dse_strings_are_equal(*(results[2]), (String8)STR8("sometext")));
 }
+
+void int_to_string() {
+  dse_u64 n = 123456789;
+  String8* result = dse_int_to_string(n);
+  String8 n_str = STR8("123456789");
+  DSE_ASSERT(result->size == n_str.size, "Got size: %lld, but expected %lld", result->size, n_str.size);
+  DSE_ASSERT(dse_strings_are_equal(*result, n_str), "Got result: %s |", result->text);
+}
+
+void string_to_int() {
+  {
+    String8 n_str = STR8("1");
+    dse_s64 n = dse_string_to_int(n_str);
+    DSE_ASSERT(n == 1, "Got %lld", n);
+  }
+
+  {
+    String8 n_str = STR8("100");
+    dse_s64 n = dse_string_to_int(n_str);
+    DSE_ASSERT(n == 100, "Got %lld", n);
+  }
+
+  {    
+    String8 n_str = STR8("123456789");
+    dse_s64 n = dse_string_to_int(n_str);
+    DSE_ASSERT(n == 123456789, "Got %lld", n);
+  }
+}
