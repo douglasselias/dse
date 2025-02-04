@@ -69,6 +69,7 @@ String8* dse_trim(String8 string);
 // int dse_index_of(String8 string, char search); // , int fromIndex); /// char_index
 // int dse_last_index_of(String8 string, char search); // , int fromIndex);
 
+bool simple_fuzzy_match(String8 string, String8 pattern);
 
 #ifdef DSE_STRING8_IMPLEMENTATION
 
@@ -406,6 +407,16 @@ String8* dse_remove_chars(String8 string, char delim) {
   }
 
   return result;
+}
+
+bool simple_fuzzy_match(String8 string, String8 pattern) {
+  while(*string.text != '\0' && *pattern.text != '\0')  {
+    if(*string.text + 32 == *pattern.text + 32)
+      pattern.text++;
+    string.text++;
+  }
+
+  return *pattern.text == '\0' ? true : false;
 }
 
 #endif // DSE_STRING8_IMPLEMENTATION

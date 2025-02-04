@@ -267,3 +267,19 @@ void remove_chars() {
   String8 target = STR8("abcdefghi");
   DSE_ASSERT(dse_strings_are_equal(result, target), "Wrong result, got %s", result.text);
 }
+
+void simple_fuzzy() {
+  { 
+    String8 string = STR8("carpentry");
+    String8 pattern = STR8("carry");
+    bool result = simple_fuzzy_match(string, pattern);
+    DSE_ASSERT(result, "Did not match: %d", result);
+  }
+
+  {
+    String8 string = STR8("carpentr");
+    String8 pattern = STR8("carry");
+    bool result = simple_fuzzy_match(string, pattern);
+    DSE_ASSERT(!result, "Did not match: %d", result);
+  }
+}
