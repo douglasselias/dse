@@ -4,6 +4,7 @@
 #include<stdbool.h>
 #include<stdint.h>
 
+typedef int64_t dse_s64;
 typedef uint8_t dse_u8;
 typedef uint64_t dse_u64;
 
@@ -18,6 +19,8 @@ dse_u64 __dse_size(char* s);
 
 #define STR8(string) { string, __dse_size(string) }
 
+bool dse_strings_are_equal(String8 a, String8 b);
+
 /// Should I return or modify in place?
 void _dse_to_uppercase(String8 s);
 void _dse_to_lowercase(String8 s);
@@ -31,21 +34,22 @@ void _dse_string_copy(char* source, String8* destination);
 char _dse_ascii_code_to_char(dse_u8 number);
 dse_u8 _dse_ascii_code_at(String8 string, dse_u8 index);
 
-String8* dse_concat_strings(String8 a, String8 b); /// Should it be va_args?
+String8* dse_concat_strings(String8 a, String8 b);
+// String8* dse_concat_strings(String8 a, String8 b); /// Make it use va_args
 void dse_append_char(String8* s, char c);
 
 String8* dse_string_join(String8** array_of_strings, dse_u64 count, char delim);
-// String8 dse_string_join(String8* array_of_strings, int count, String8 delim); // ???
+String8* dse_string_join_string(String8** array_of_strings, dse_u64 count, String8 delim);
 
 // String8* dse_string_split(String8 s, char delim);
 // String8* dse_string_split(String8 s, String* delim); // C does not support function overloading
 
-// bool dse_string_includes(String8 string, String8 substring); // has_substring
+bool dse_string_includes(String8 haystack, String8 needle);
 
-// int dse_substring_start_index(String8 string, String8 substring);
-// int dse_substring_end_index(String8 string, String8 substring);
+dse_s64 dse_substring_start_index(String8 haystack, String8 needle);
+dse_s64 dse_substring_end_index(String8 haystack, String8 needle);
 
-// String8 dse_slice_string(String8 s, int start, int end); /// end should have a default value
+String8* dse_slice_string(String8 string, dse_u64 start, dse_u64 end); /// end should have a default value
 
 // String* dse_string_format(String8 format, String8 values); /// Needs to be va_args (similar to sprintf)
 
@@ -59,14 +63,11 @@ String8* dse_string_join(String8** array_of_strings, dse_u64 count, char delim);
 
 // String8 dse_slugify(String8 string);
 
-// #define slugify dse_slugify
-
 // String8 dse_trim(String8 string);
 
 // int dse_index_of(String8 string, char search); // , int fromIndex); /// char_index
 // int dse_last_index_of(String8 string, char search); // , int fromIndex);
 
-// bool dse_strings_are_equal(String8 a, String8 b);
 
 #ifdef DSE_STRING8_IMPLEMENTATION
 
@@ -74,6 +75,14 @@ dse_u64 __dse_size(char* s) {
   dse_u64 size = 0;
   while(*s++ != '\0') size++;
   return size;
+}
+
+bool dse_strings_are_equal(String8 a, String8 b) {
+  if(a.size != b.size) return false;
+  for(dse_u64 i = 0; i < a.size; i++) {
+    if(a.text[i] != b.text[i]) return false;
+  }
+  return true;
 }
 
 void _dse_to_uppercase(String8 s) {
@@ -157,7 +166,6 @@ String8* dse_concat_strings(String8 a, String8 b) {
       result->text[i] = a.text[i];
     else if(a.size <= i && (i - a.size) < b.size) {
       result->text[i] = b.text[i - a.size];
-      printf("%c", b.text[i - a.size]);
     }
   }
   return result;
@@ -195,6 +203,127 @@ String8* dse_string_join(String8** array_of_strings, dse_u64 count, char delim) 
   }
 
   return result;
+}
+
+
+String8* dse_string_join_string(String8** array_of_strings, dse_u64 count, String8 delim) {
+  dse_u64 total_size = 0;
+  for(dse_u64 i = 0; i < count; i++) {
+    String8* s = array_of_strings[i];
+    total_size += s->size + delim.size;
+  }
+  total_size -= delim.size;
+  String8* result = calloc(sizeof(String8), 1);
+  result->text = calloc(sizeof(char), total_size);
+  result->size = total_size;
+
+  dse_u64 global_index = 0;
+  for(dse_u64 i = 0; i < count; i++) {
+    String8* s = array_of_strings[i];
+    for(dse_u64 j = 0; j < s->size; j++) {
+      result->text[global_index++] = s->text[j];
+    }
+
+    for(dse_u64 j = 0; j < delim.size; j++) {
+      result->text[global_index++] = delim.text[j];
+    }
+  }
+
+  return result;
+}
+
+bool dse_string_includes(String8 haystack, String8 needle) {
+  if(needle.size == 0) return true;
+  if(haystack.size < needle.size) return false;
+
+  dse_u64 haystack_index = 0;
+  dse_u64 needle_index   = 0;
+
+  while(haystack_index < haystack.size) {
+    /// @todo: Create a function for char lowercase.
+    char a = haystack.text[haystack_index] + 32;
+    char b = needle.text[needle_index] + 32;
+    if(a == b) {
+      needle_index++;
+
+      if(needle_index < needle.size) haystack_index++;
+      else return true;
+    } else {
+      needle_index = 0;
+      haystack_index++;
+    }
+  }
+
+  return false;
+}
+
+dse_s64 dse_substring_start_index(String8 haystack, String8 needle) {
+  if(needle.size == 0) return true;
+  if(haystack.size < needle.size) return false;
+
+  dse_u64 haystack_index = 0;
+  dse_u64 needle_index   = 0;
+
+  while(haystack_index < haystack.size) {
+    /// @todo: Create a function for char lowercase.
+    char a = haystack.text[haystack_index] + 32;
+    char b = needle.text[needle_index]     + 32;
+    if(a == b) {
+      needle_index++;
+
+      if(needle_index < needle.size) haystack_index++;
+      else {
+        return haystack_index - needle.size + 1;
+      }
+    } else {
+      needle_index = 0;
+      haystack_index++;
+    }
+  }
+
+  return -1;
+}
+
+dse_s64 dse_substring_end_index(String8 haystack, String8 needle) {
+  if(needle.size == 0) return true;
+  if(haystack.size < needle.size) return false;
+
+  dse_u64 haystack_index = 0;
+  dse_u64 needle_index   = 0;
+
+  while(haystack_index < haystack.size) {
+    /// @todo: Create a function for char lowercase.
+    /// @todo: Should this be case insensitive???
+    char a = haystack.text[haystack_index] + 32;
+    char b = needle.text[needle_index]     + 32;
+    if(a == b) {
+      needle_index++;
+
+      if(needle_index < needle.size) haystack_index++;
+      else {
+        return haystack_index + 1;
+      }
+    } else {
+      needle_index = 0;
+      haystack_index++;
+    }
+  }
+
+  return -1;
+}
+
+String8* dse_slice_string(String8 string, dse_u64 start, dse_u64 end) {
+  /// @todo: Validate start and end? User assert?
+  String8* slice = calloc(sizeof(String8), 1);
+  slice->size = end - start;
+  slice->text = calloc(sizeof(char), slice->size);
+
+  dse_u64 slice_index = 0;
+  for(dse_u64 i = start; i < end; i++) {
+    slice->text[slice_index++] = string.text[i];
+  }
+
+  return slice;
 }
 
 #endif // DSE_STRING8_IMPLEMENTATION
