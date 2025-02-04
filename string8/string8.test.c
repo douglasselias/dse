@@ -36,7 +36,7 @@ void test_strings_equal() {
 
 void to_uppercase() {
   String8 result = STR8("hello");
-  _dse_to_uppercase(result);
+  dse_to_uppercase(result);
   char* target = "HELLO";
   for(dse_u64 i = 0; i < result.size; i++) {
     DSE_ASSERT(result.text[i] == target[i], "Got %c", result.text[i]);
@@ -45,7 +45,7 @@ void to_uppercase() {
 
 void to_tolowercase() {
   String8 result = STR8("HELLO");
-  _dse_to_lowercase(result);
+  dse_to_lowercase(result);
   char* target = "hello";
   for(dse_u64 i = 0; i < result.size; i++) {
     DSE_ASSERT(result.text[i] == target[i], "Got %c", result.text[i]);
@@ -54,7 +54,7 @@ void to_tolowercase() {
 
 void __to_pascal_case() {
   String8 result = STR8("hello world");
-  _dse_to_pascal_case(result);
+  dse_to_pascal_case(result);
   char* target = "Hello World";
   for(dse_u64 i = 0; i < result.size; i++) {
     DSE_ASSERT(result.text[i] == target[i], "Got %c", result.text[i]);
@@ -82,20 +82,20 @@ void kebab_case() {
 void string_copy() {
   String8 destination = {};
   char* source = "hello world";
-  _dse_string_copy(source, &destination);
+  dse_string_copy(source, &destination);
   for(dse_u64 i = 0; i < destination.size; i++) {
     DSE_ASSERT(destination.text[i] == source[i], "Got %c", destination.text[i]);
   }
 }
 
 void ascii_code_to_char() {
-  char c = _dse_ascii_code_to_char(100);
+  char c = dse_ascii_code_to_char(100);
   DSE_ASSERT(c == 'd', "Got %c", c);
 }
 
 void ascii_code_at() {
   String8 s = STR8("abcd");
-  dse_u8 n = _dse_ascii_code_at(s, 3);
+  dse_u8 n = dse_ascii_code_at(s, 3);
   DSE_ASSERT(n == 100, "Got %c", n);
 }
 

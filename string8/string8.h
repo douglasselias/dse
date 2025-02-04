@@ -22,17 +22,17 @@ dse_u64 __dse_size(char* s);
 bool dse_strings_are_equal(String8 a, String8 b);
 
 /// Should I return or modify in place?
-void _dse_to_uppercase(String8 s);
-void _dse_to_lowercase(String8 s);
-void _dse_to_pascal_case(String8 s);
+void dse_to_uppercase(String8 s);
+void dse_to_lowercase(String8 s);
+void dse_to_pascal_case(String8 s);
 void dse_to_camel_case(String8 s);
 void dse_to_snake_case(String8 s);
 void dse_to_kebab_case(String8 s);
 
-void _dse_string_copy(char* source, String8* destination);
+void dse_string_copy(char* source, String8* destination);
 
-char _dse_ascii_code_to_char(dse_u8 number);
-dse_u8 _dse_ascii_code_at(String8 string, dse_u8 index);
+char dse_ascii_code_to_char(dse_u8 number);
+dse_u8 dse_ascii_code_at(String8 string, dse_u8 index);
 
 String8* dse_concat_strings(String8 a, String8 b);
 // String8* dse_concat_strings(String8 a, String8 b); /// Make it use va_args
@@ -41,8 +41,8 @@ void dse_append_char(String8* s, char c);
 String8* dse_string_join(String8** array_of_strings, dse_u64 count, char delim);
 String8* dse_string_join_string(String8** array_of_strings, dse_u64 count, String8 delim);
 
-// String8* dse_string_split(String8 s, char delim);
-// String8* dse_string_split(String8 s, String* delim); // C does not support function overloading
+// String8** dse_string_split(String8 s, char delim);
+// String8** dse_string_split_string(String8 s, String* delim);
 
 bool dse_string_includes(String8 haystack, String8 needle);
 
@@ -85,7 +85,7 @@ bool dse_strings_are_equal(String8 a, String8 b) {
   return true;
 }
 
-void _dse_to_uppercase(String8 s) {
+void dse_to_uppercase(String8 s) {
   for(dse_u64 i = 0; i < s.size; i++) {
     if('a' <= s.text[i] && s.text[i] <= 'z') {
       s.text[i] -= 32;
@@ -93,7 +93,7 @@ void _dse_to_uppercase(String8 s) {
   }
 }
 
-void _dse_to_lowercase(String8 s) {
+void dse_to_lowercase(String8 s) {
   for(dse_u64 i = 0; i < s.size; i++) {
     if('A' <= s.text[i] && s.text[i] <= 'Z') {
       s.text[i] += 32;
@@ -101,7 +101,7 @@ void _dse_to_lowercase(String8 s) {
   }
 }
 
-void _dse_to_pascal_case(String8 s) {
+void dse_to_pascal_case(String8 s) {
   bool is_first_letter = true;
   for(dse_u64 i = 0; i < s.size; i++) {
     char c = s.text[i];
@@ -138,7 +138,7 @@ void dse_to_kebab_case(String8 s) {
   }
 }
 
-void _dse_string_copy(char* source, String8* destination) {
+void dse_string_copy(char* source, String8* destination) {
   dse_u64 source_size = __dse_size(source);
   destination->size = source_size;
   destination->text = calloc(sizeof(char), source_size);
@@ -148,11 +148,11 @@ void _dse_string_copy(char* source, String8* destination) {
   }
 }
 
-char _dse_ascii_code_to_char(dse_u8 number) {
+char dse_ascii_code_to_char(dse_u8 number) {
   return (char)number;
 }
 
-dse_u8 _dse_ascii_code_at(String8 string, dse_u8 index) {
+dse_u8 dse_ascii_code_at(String8 string, dse_u8 index) {
   return (dse_u8)string.text[index];
 }
 
