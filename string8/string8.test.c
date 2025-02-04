@@ -216,3 +216,12 @@ void slice_string() {
   String8 target = STR8("pen");
   DSE_ASSERT(dse_strings_are_equal(slice, target), "Strings are not equal, got slice: %s", slice.text);
 }
+
+void string_split() {
+  String8 string = STR8("hello\nworld\nsometext");
+  char delim = '\n';
+  String8** results = dse_string_split(string, delim);
+  DSE_ASSERT(dse_strings_are_equal(*(results[0]), (String8)STR8("hello")));
+  DSE_ASSERT(dse_strings_are_equal(*(results[1]), (String8)STR8("world")));
+  DSE_ASSERT(dse_strings_are_equal(*(results[2]), (String8)STR8("sometext")));
+}

@@ -41,7 +41,7 @@ void dse_append_char(String8* s, char c);
 String8* dse_string_join(String8** array_of_strings, dse_u64 count, char delim);
 String8* dse_string_join_string(String8** array_of_strings, dse_u64 count, String8 delim);
 
-// String8** dse_string_split(String8 s, char delim);
+String8** dse_string_split(String8 s, char delim);
 // String8** dse_string_split_string(String8 s, String* delim);
 
 bool dse_string_includes(String8 haystack, String8 needle);
@@ -54,6 +54,7 @@ String8* dse_slice_string(String8 string, dse_u64 start, dse_u64 end); /// end s
 // String* dse_string_format(String8 format, String8 values); /// Needs to be va_args (similar to sprintf)
 
 // String8 dse_number_to_string(int n);
+// int dse_string_to_number(String8 s);
 
 // String8 dse_string_replace(String8 string, char delim); // Should I return or modify in place?
 // String8 dse_string_replace(String8 string, String8 delim);
@@ -228,6 +229,26 @@ String8* dse_string_join_string(String8** array_of_strings, dse_u64 count, Strin
       result->text[global_index++] = delim.text[j];
     }
   }
+
+  return result;
+}
+
+String8** dse_string_split(String8 string, char delim) {
+  dse_u64 result_size = 0;
+  for(dse_u64 i = 0; i < string.size; i++) {
+    if(string.text[i] == delim) result_size++;
+  }
+  String8** result = calloc(sizeof(String8*), result_size + 1);
+  dse_u64 result_index = 0;
+  dse_u64 start_index = 0;
+  for(dse_u64 i = 0; i < string.size; i++) {
+    if(string.text[i] == delim) {
+      result[result_index++] = dse_slice_string(string, start_index, i);
+      start_index = i + 1;
+    }
+  }
+
+  result[result_index] = dse_slice_string(string, start_index, string.size);
 
   return result;
 }
