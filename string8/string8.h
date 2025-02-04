@@ -59,7 +59,7 @@ dse_s64 dse_string_to_int(String8 string);
 // String8 dse_string_replace(String8 string, char delim); // Should I return or modify in place?
 // String8 dse_string_replace(String8 string, String8 delim);
 
-// String8 dse_remove_chars(String8 string, char delim);
+String8* dse_remove_chars(String8 string, char delim);
 // String8 dse_remove_strings(String8 string, String8 delim);
 
 // String8 dse_slugify(String8 string);
@@ -386,6 +386,26 @@ String8* dse_trim(String8 string) {
   }
   
  return dse_slice_string(string, start, end);
+}
+
+String8* dse_remove_chars(String8 string, char delim) {
+  String8* result = calloc(sizeof(String8), 1);
+
+  dse_u64 delim_size = 0;
+  for(dse_u64 i = 0; i < string.size; i++) {
+    if(string.text[i] == delim) delim_size++;
+  }
+
+  dse_u64 result_size = string.size - delim_size;
+  result->text = calloc(sizeof(char), result_size);
+  result->size = result_size;
+
+  dse_u64 result_index = 0;
+  for(dse_u64 i = 0; i < string.size; i++) {
+    if(string.text[i] != delim) result->text[result_index++] = string.text[i];
+  }
+
+  return result;
 }
 
 #endif // DSE_STRING8_IMPLEMENTATION

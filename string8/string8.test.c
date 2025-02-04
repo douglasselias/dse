@@ -260,3 +260,10 @@ void string_trim() {
   String8 target = STR8("abc");
   DSE_ASSERT(dse_strings_are_equal(result, target), "Wrong result, got %s", result.text);
 }
+
+void remove_chars() {
+  String8 s = STR8("abc-def-ghi");
+  String8 result = *dse_remove_chars(s, '-');
+  String8 target = STR8("abcdefghi");
+  DSE_ASSERT(dse_strings_are_equal(result, target), "Wrong result, got %s", result.text);
+}
