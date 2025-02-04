@@ -64,7 +64,7 @@ dse_s64 dse_string_to_int(String8 string);
 
 // String8 dse_slugify(String8 string);
 
-// String8 dse_trim(String8 string);
+String8* dse_trim(String8 string);
 
 // int dse_index_of(String8 string, char search); // , int fromIndex); /// char_index
 // int dse_last_index_of(String8 string, char search); // , int fromIndex);
@@ -370,6 +370,22 @@ dse_s64 dse_string_to_int(String8 string) {
   }
 
   return result;
+}
+
+String8* dse_trim(String8 string) {
+  dse_u64 start = 0;
+  for(dse_u64 i = 0; i < string.size; i++) {
+    if(string.text[i] == ' ') start++;
+    else break;
+  }
+
+  dse_u64 end = string.size;
+  for(dse_s64 i = (dse_s64)string.size - 1; i >= 0; i--) {
+    if(string.text[i] == ' ') end--;
+    else break;
+  }
+  
+ return dse_slice_string(string, start, end);
 }
 
 #endif // DSE_STRING8_IMPLEMENTATION

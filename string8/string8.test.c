@@ -253,3 +253,10 @@ void string_to_int() {
     DSE_ASSERT(n == 123456789, "Got %lld", n);
   }
 }
+
+void string_trim() {
+  String8 s = STR8("  abc  ");
+  String8 result = *dse_trim(s);
+  String8 target = STR8("abc");
+  DSE_ASSERT(dse_strings_are_equal(result, target), "Wrong result, got %s", result.text);
+}
