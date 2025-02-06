@@ -1,0 +1,135 @@
+#ifndef DSE_ARENA_H
+#define DSE_ARENA_H
+
+#include<stdbool.h>
+#include<stdint.h>
+
+typedef int64_t dse_s64;
+typedef uint8_t dse_u8;
+typedef uint64_t dse_u64;
+
+// Use logger to visualize the arena
+// push & pop with timestamps, caller source code location, arena location position
+// Pool allocator with free list
+// dynamic array
+// MMU virtual address reservation - (VirtualAlloc) - each chunk is commited only when needed
+// Growth chaining (malloc new chunk)
+typedef struct {
+  dse_s64 used;
+  dse_s64 capacity;
+  dse_u8* data;
+} Arena;
+
+Arena* dse_create_arena(dse_u64 capacity);
+void dse_destroy_arena(Arena* arena);
+
+void* dse_push_arena(Arena* arena, dse_u64 size);
+void dse_pop_arena(Arena* arena, dse_u64 size);
+
+void dse_reset_arena(Arena* arena);
+void dse_set_position_back(Arena* arena, dse_u64 size);
+
+dse_u64 dse_total_bytes_allocated(Arena* arena);
+
+#ifdef DSE_ARENA_IMPLEMENTATION
+
+Arena* dse_create_arena(dse_u64 capacity) {
+  Arena* arena = calloc(sizeof(Arena), 1);
+  arena->capacity = capacity * sizeof(dse_u8);
+  arena->data = calloc(sizeof(dse_u8), arena->capacity);
+  return arena;
+}
+
+void dse_destroy_arena(Arena* arena) {
+  free(arena->data);
+  free(arena);
+}
+
+void* dse_push_arena(Arena* arena, dse_u64 size) {
+  dse_u64 byte_size = size * sizeof(dse_u8);
+  dse_s64 size_used = arena->used + byte_size;
+  dse_s64 total_capacity = arena->capacity * sizeof(dse_u8);
+  // printf("Size used: %lld, Total Capacity: %lld\n\n", size_used, total_capacity);
+  if(size_used > total_capacity) {
+    puts("[Arena Error] No memory left");
+    return NULL;
+  } else {
+    void* block = arena->data;
+    arena->used += size * sizeof(dse_u8);
+    return block;
+  }
+}
+
+void dse_pop_arena(Arena* arena, dse_u64 size) {
+  dse_u64 byte_size = size * sizeof(dse_u8);
+  dse_s64 size_used = arena->used - byte_size;
+  if(size_used >= 0) {
+    arena->used -= size * sizeof(dse_u8);
+  } else {
+    arena->used = 0;
+  }
+}
+
+void dse_reset_arena(Arena* arena) {
+  arena->used = 0;
+}
+
+void dse_set_position_back(Arena* arena, dse_u64 size) {
+  dse_s64 byte_size = size * sizeof(dse_u8);
+  dse_s64 total_capacity = arena->capacity * sizeof(dse_u8);
+  if(byte_size >= total_capacity) {
+    puts("[Arena Error] No memory left");
+  }
+  arena->used = size * sizeof(dse_u8);
+}
+
+dse_u64 dse_total_bytes_allocated(Arena* arena) {
+  return arena->used * sizeof(dse_u8);
+}
+
+#endif // DSE_ARENA_IMPLEMENTATION
+#endif // DSE_ARENA_H
+
+/*
+------------------------------------------------------------------------------
+This software is available under 2 licenses -- choose whichever you prefer.
+------------------------------------------------------------------------------
+ALTERNATIVE A - Public Domain (www.unlicense.org)
+This is free and unencumbered software released into the public domain.
+Anyone is free to copy, modify, publish, use, compile, sell, or
+distribute this software, either in source code form or as a compiled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain. We make this dedication for the benefit
+of the public at large and to the detriment of our heirs and
+successors. We intend this dedication to be an overt act of
+relinquishment in perpetuity of all present and future rights to this
+software under copyright law.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+------------------------------------------------------------------------------
+ALTERNATIVE B - MIT License
+Copyright (c) 2025 Douglas S. Elias
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
