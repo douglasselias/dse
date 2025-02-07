@@ -20,6 +20,8 @@ typedef struct Arena Arena;
 struct Arena {
   Arena* previous;
   Arena* next;
+  dse_s64 freelist[100];
+  dse_s64 freelist_index;
   dse_s64 used;
   dse_s64 capacity;
   dse_u8* data;
@@ -48,27 +50,8 @@ dse_u64 dse_total_bytes_allocated(Arena* arena);
 Arena* dse_create_arena(dse_u64 capacity) {
   Arena* arena = calloc(sizeof(Arena), 1);
   arena->capacity = capacity * sizeof(dse_u8);
-  // arena->data = calloc(sizeof(dse_u8), arena->capacity);
 
-  /// @todo: No idea why this does not work!!!
-  // arena->data = VirtualAlloc(NULL, sizeof(dse_u8) * arena->capacity, MEM_RESERVE, PAGE_READWRITE);
   arena->data = VirtualAlloc(NULL, sizeof(dse_u8) * arena->capacity, MEM_RESERVE, PAGE_READWRITE);
-  if(arena->data == NULL) puts("Data is null");
-  int err = GetLastError();
-  // if(err != 0) printf("Error on creating arena: %d", err);
-
-  LPVOID lpMsgBuf;
-  FormatMessage(
-    FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-    FORMAT_MESSAGE_FROM_SYSTEM |
-    FORMAT_MESSAGE_IGNORE_INSERTS,
-    NULL,
-    err,
-    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-    (LPTSTR) &lpMsgBuf,
-    0, NULL);
-  // printf("Error message: %s\n", (LPCTSTR)lpMsgBuf);
-  ////////////////////////////////
 
   arena->previous = calloc(sizeof(Arena), 1);
   arena->next = calloc(sizeof(Arena), 1);
@@ -93,7 +76,11 @@ void* _dse_push_arena(Arena* arena, dse_u64 size) {
     /// @todo: Somehow update the arena to new_arena
     return _dse_push_arena(arena, size);
   } else {
-    /// @todo: This doenst work yet
+    // dse_s64 index = arena->freelist[arena->freelist_index];
+    // if(index != 0) {
+    //   arena->freelist[arena->freelist_index++];
+    // }
+
     VirtualAlloc(arena->data, size * sizeof(dse_u8), MEM_COMMIT, PAGE_READWRITE);
     void* block = arena->data + (arena->used / sizeof(dse_u8));
     arena->used += size * sizeof(dse_u8);
@@ -106,6 +93,7 @@ void dse_pop_arena(Arena* arena, dse_u64 size) {
   dse_s64 size_used = arena->used - byte_size;
   if(size_used >= 0) {
     arena->used -= size * sizeof(dse_u8);
+    // arena->freelist[arena->freelist_index++] = arena->data - arena->used;
   } else {
     if(arena->previous != NULL) {
       dse_s64 current_remainder = byte_size - arena->used;
