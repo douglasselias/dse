@@ -16,8 +16,6 @@ typedef int64_t dse_s64;
 typedef uint8_t dse_u8;
 typedef uint64_t dse_u64;
 
-// Pool allocator with free list
-
 typedef struct Arena Arena;
 struct Arena {
   Arena* previous;
@@ -39,8 +37,11 @@ void dse_set_position_back(Arena* arena, dse_u64 size);
 dse_u64 dse_total_bytes_allocated(Arena* arena);
 
 /// @todo: Do the same for pop
+// #define dse_push_arena(arena, size) \
+  // _dse_push_arena(arena, size); printf("At %s on %s:%d Used %zd byte(s)\n", timestamp(), __FILE__, __LINE__, arena->used * sizeof(dse_u8)); \
+
 #define dse_push_arena(arena, size) \
-  _dse_push_arena(arena, size); printf("At %s on %s:%d Used %zd byte(s)", timestamp(), __FILE__, __LINE__, arena->used * sizeof(dse_u8)); \
+  _dse_push_arena(arena, size); \
 
 #ifdef DSE_ARENA_IMPLEMENTATION
 
@@ -48,13 +49,27 @@ Arena* dse_create_arena(dse_u64 capacity) {
   Arena* arena = calloc(sizeof(Arena), 1);
   arena->capacity = capacity * sizeof(dse_u8);
   // arena->data = calloc(sizeof(dse_u8), arena->capacity);
-  arena->data = calloc(sizeof(dse_u8), arena->capacity);
 
   /// @todo: No idea why this does not work!!!
-  // arena->data = VirtualAlloc(0, sizeof(dse_u8) * arena->capacity, MEM_RESERVE, PAGE_READWRITE);
-  // if(arena->data == NULL) puts("Data is null");
-  // int err = GetLastError();
-  // if(err != 0) printf("Error on creating arena: %x", err);
+  // arena->data = VirtualAlloc(NULL, sizeof(dse_u8) * arena->capacity, MEM_RESERVE, PAGE_READWRITE);
+  arena->data = VirtualAlloc(NULL, sizeof(dse_u8) * arena->capacity, MEM_RESERVE, PAGE_READWRITE);
+  if(arena->data == NULL) puts("Data is null");
+  int err = GetLastError();
+  // if(err != 0) printf("Error on creating arena: %d", err);
+
+  LPVOID lpMsgBuf;
+  FormatMessage(
+    FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+    FORMAT_MESSAGE_FROM_SYSTEM |
+    FORMAT_MESSAGE_IGNORE_INSERTS,
+    NULL,
+    err,
+    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+    (LPTSTR) &lpMsgBuf,
+    0, NULL);
+  // printf("Error message: %s\n", (LPCTSTR)lpMsgBuf);
+  ////////////////////////////////
+
   arena->previous = calloc(sizeof(Arena), 1);
   arena->next = calloc(sizeof(Arena), 1);
   return arena;
@@ -79,8 +94,8 @@ void* _dse_push_arena(Arena* arena, dse_u64 size) {
     return _dse_push_arena(arena, size);
   } else {
     /// @todo: This doenst work yet
-    // VirtualAlloc(arena->data, size * sizeof(dse_u8), MEM_COMMIT, PAGE_READWRITE);
-    void* block = arena->data;
+    VirtualAlloc(arena->data, size * sizeof(dse_u8), MEM_COMMIT, PAGE_READWRITE);
+    void* block = arena->data + (arena->used / sizeof(dse_u8));
     arena->used += size * sizeof(dse_u8);
     return block;
   }

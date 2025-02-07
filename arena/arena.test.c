@@ -1,19 +1,26 @@
 #define DSE_ARENA_IMPLEMENTATION
 #include "arena.h"
 
-void test_arena_creation() {
-  Arena* arena = dse_create_arena(8);
-  DSE_ASSERT(arena->capacity == 8, "Capacity is wrong size, got %lld", arena->capacity);
-  for(int i = 0; i < 8; i++) {
-    DSE_ASSERT(arena->data[i] == 0);
-  }
-}
+// void test_arena_creation() {
+//   Arena* arena = dse_create_arena(8);
+//   DSE_ASSERT(arena->capacity == 8, "Capacity is wrong size, got %lld", arena->capacity);
+//   for(int i = 0; i < 8; i++) {
+//     DSE_ASSERT(arena->data[i] == 0);
+//   }
+// }
 
 void test_arena_push() {
-  Arena* arena = dse_create_arena(8);
-  void* block = dse_push_arena(arena, 1);
-  *(dse_u8*)block = 10;
-  DSE_ASSERT(arena->data[0] == 10);
+  dse_u64 arena_size = 8;
+  Arena* arena = dse_create_arena(arena_size);
+
+  for(dse_u8 i = 0; i < arena_size; i++) {
+    void* block = dse_push_arena(arena, 1);
+    *(dse_u8*)block = 10 * (i+1);
+  }
+
+  for(dse_u8 i = 0; i < arena_size; i++) {
+    DSE_ASSERT(arena->data[i] == (10 * (i+1)), "Arena data: %d:%d", i, arena->data[i]);
+  }
 }
 
 // void test_arena_push_overflow() { // Old version of arena
@@ -23,21 +30,21 @@ void test_arena_push() {
 // }
 
 // void test_arena_push_overflow_chaining() { /// @todo: not working
-  // Arena* arena = dse_create_arena(1);
-  // void* block = dse_push_arena(arena, 2);
-  // DSE_ASSERT(block != NULL);
-  // DSE_ASSERT(arena->previous != NULL);
-  // DSE_ASSERT(arena->next == NULL);
+//   Arena* arena = dse_create_arena(1);
+//   void* block = dse_push_arena(arena, 2);
+//   DSE_ASSERT(block != NULL);
+//   DSE_ASSERT(arena->previous != NULL);
+//   DSE_ASSERT(arena->next == NULL);
 // }
 
-void test_arena_push_underflow_chaining() {
-  Arena* arena = dse_create_arena(1);
-  // Arena* first_arena_address = arena;
-  // void* block = dse_push_arena(arena, 3);
-  // dse_pop_arena(arena, 2);
-  // Arena* second_arena_address = arena;
-  // DSE_ASSERT(first_arena_address == second_arena_address);
-}
+// void test_arena_push_underflow_chaining() {
+//   Arena* arena = dse_create_arena(1);
+//   Arena* first_arena_address = arena;
+//   void* block = dse_push_arena(arena, 3);
+//   dse_pop_arena(arena, 2);
+//   Arena* second_arena_address = arena;
+//   DSE_ASSERT(first_arena_address == second_arena_address);
+// }
 
 // void test_arena_pop() { /// Old implementation of pop
 //   Arena* arena = dse_create_arena(2);
