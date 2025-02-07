@@ -195,13 +195,17 @@ String8* dse_string_join(String8** array_of_strings, dse_u64 count, char delim) 
   result->size = total_size;
 
   dse_u64 global_index = 0;
+  dse_u64 delim_count = count - 1;
   for(dse_u64 i = 0; i < count; i++) {
     String8* s = array_of_strings[i];
     for(dse_u64 j = 0; j < s->size; j++) {
-      result->text[global_index + j] = s->text[j];
+      result->text[global_index++] = s->text[j];
     }
-    global_index += s->size;
-    result->text[global_index++] = delim;
+
+    if(delim_count > 0) {
+      result->text[global_index++] = delim;
+      delim_count--;
+    }
   }
 
   return result;
@@ -212,22 +216,26 @@ String8* dse_string_join_string(String8** array_of_strings, dse_u64 count, Strin
   dse_u64 total_size = 0;
   for(dse_u64 i = 0; i < count; i++) {
     String8* s = array_of_strings[i];
-    total_size += s->size + delim.size;
+    total_size += s->size;
   }
-  total_size -= delim.size;
+  total_size += delim.size * (count - 1);
   String8* result = calloc(sizeof(String8), 1);
   result->text = calloc(sizeof(char), total_size);
   result->size = total_size;
 
   dse_u64 global_index = 0;
+  dse_u64 delim_count = count - 1;
   for(dse_u64 i = 0; i < count; i++) {
     String8* s = array_of_strings[i];
     for(dse_u64 j = 0; j < s->size; j++) {
       result->text[global_index++] = s->text[j];
     }
 
-    for(dse_u64 j = 0; j < delim.size; j++) {
-      result->text[global_index++] = delim.text[j];
+    if(delim_count > 0) {
+      for(dse_u64 j = 0; j < delim.size; j++) {
+        result->text[global_index++] = delim.text[j];
+      }
+      delim_count--;
     }
   }
 

@@ -125,14 +125,11 @@ void string_joins() {
   String8 c = STR8("ready?");
   String8** arr = calloc(sizeof(String8*), 3);
   arr[0] = calloc(sizeof(String8), 1);
-  arr[0]->text = a.text;
-  arr[0]->size = a.size;
+  arr[0] = &a;
   arr[1] = calloc(sizeof(String8), 1);
-  arr[1]->text = b.text;
-  arr[1]->size = b.size;
+  arr[1] = &b;
   arr[2] = calloc(sizeof(String8), 1);
-  arr[2]->text = c.text;
-  arr[2]->size = c.size;
+  arr[2] = &c;
   String8* result = dse_string_join(arr, 3, '!');
   char* s = "hello!sailor!ready?";
 
@@ -150,14 +147,11 @@ void string_joins_strings() {
 
   String8** arr = calloc(sizeof(String8*), 3);
   arr[0] = calloc(sizeof(String8), 1);
-  arr[0]->text = a.text;
-  arr[0]->size = a.size;
   arr[1] = calloc(sizeof(String8), 1);
-  arr[1]->text = b.text;
-  arr[1]->size = b.size;
   arr[2] = calloc(sizeof(String8), 1);
-  arr[2]->text = c.text;
-  arr[2]->size = c.size;
+  arr[0] = &a;
+  arr[1] = &b;
+  arr[2] = &c;
 
   String8* r = dse_string_join_string(arr, 3, delim);
   String8 result = *r;
