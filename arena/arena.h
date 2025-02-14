@@ -21,12 +21,23 @@ struct Arena {
 };
 
 Arena* dse_create_arena(dse_u64 capacity);
-void dse_destroy_arena(Arena* arena);
+void dse_destroy_arena(Arena** arena);
 
-void* dse_push_arena(Arena* arena, dse_u64 size);
+void* dse_push_arena(Arena** arena, dse_u64 size);
 void dse_pop_arena(Arena* arena, dse_u64 size);
 
 #ifdef DSE_ARENA_IMPLEMENTATION
+
+#define  __internal_is_freed(buffer) \
+  do { \
+    dse_u64 line = __LINE__; \
+    MEMORY_BASIC_INFORMATION memory_info; \
+    VirtualQuery(buffer, &memory_info, sizeof(memory_info)); \
+    if(memory_info.State != MEM_FREE) { \
+      printf("Memory not freed (%s) at line: %lld\n", #buffer, line); \
+    } \
+  } while(0) \
+
 
 Arena* dse_create_arena(dse_u64 capacity) {
   Arena* arena = calloc(sizeof(Arena), 1);
@@ -35,45 +46,48 @@ Arena* dse_create_arena(dse_u64 capacity) {
   return arena;
 }
 
-void dse_destroy_arena(Arena* arena) {
-  Arena* last_arena = arena;
-  for(; last_arena->next != NULL; last_arena = arena->next) {}
+void dse_destroy_arena(Arena** arena_ptr) {
+  // Arena* last_arena = arena;
+  // for(; last_arena->next != NULL; last_arena = arena->next) {}
 
-  Arena* current_arena = last_arena;
+  // Arena* current_arena = last_arena;
+  Arena* arena = *arena_ptr;
+  Arena* current_arena = arena;
   for(; current_arena->previous != NULL;) {
     VirtualFree(current_arena->data, 0, MEM_RELEASE);
+    __internal_is_freed(current_arena->data);
 
     Arena* temp = current_arena;
     current_arena = current_arena->previous;
     VirtualFree(temp, 0, MEM_RELEASE);
+    __internal_is_freed(temp);
   }
 
   VirtualFree(current_arena->data, 0, MEM_RELEASE);
-  VirtualFree(current_arena, 0, MEM_RELEASE);
+  __internal_is_freed(current_arena->data);
+  VirtualFree(current_arena,       0, MEM_RELEASE);
+  __internal_is_freed(current_arena);
 }
 
-void* dse_push_arena(Arena* arena, dse_u64 size) {
-  if((arena->used + (dse_s64)size) > arena->capacity) {
-    /// @todo: Need to think about default size of arena
-    Arena* new_arena = dse_create_arena(size * 2);
-    arena->next = new_arena;
-    new_arena->previous = arena;
-    /// @todo: Somehow update the arena to new_arena
-    return dse_push_arena(arena, size);
-  } else {
+void* dse_push_arena(Arena** arena, dse_u64 size) {
+  dse_s64 new_capacity = (*arena)->used + (dse_s64)size;
+
+  if(new_capacity <= (*arena)->capacity) {
+    VirtualAlloc((*arena)->data, size, MEM_COMMIT, PAGE_READWRITE);
+    void* block = (*arena)->data + (*arena)->used;
+    (*arena)->used += size;
+    return block;
     // dse_s64 index = arena->freelist[arena->freelist_index];
     // if(index != 0) {
     //   arena->freelist[arena->freelist_index++];
     // }
-
-    MEMORY_BASIC_INFORMATION memory_info;
-    VirtualQuery(arena->data, &memory_info, sizeof(memory_info));
-    if(memory_info.State != MEM_COMMIT) {
-      VirtualAlloc(arena->data, size, MEM_COMMIT, PAGE_READWRITE);
-    }
-    void* block = arena->data + arena->used;
-    arena->used += size;
-    return block;
+  } else {
+    dse_s64 remaining = new_capacity - (*arena)->capacity;
+    Arena* new_arena = dse_create_arena(remaining * 2);
+    (*arena)->next = new_arena;
+    new_arena->previous = *arena;
+    *arena = new_arena;
+    return dse_push_arena(arena, size);
   }
 }
 
