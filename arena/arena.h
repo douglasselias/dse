@@ -40,17 +40,13 @@ void dse_pop_arena(Arena* arena, dse_u64 size);
 
 
 Arena* dse_create_arena(dse_u64 capacity) {
-  Arena* arena = calloc(sizeof(Arena), 1);
+  Arena* arena = VirtualAlloc(NULL, sizeof(Arena), MEM_COMMIT, PAGE_READWRITE);
   arena->capacity = capacity;
   arena->data = VirtualAlloc(NULL, arena->capacity, MEM_RESERVE, PAGE_READWRITE);
   return arena;
 }
 
 void dse_destroy_arena(Arena** arena_ptr) {
-  // Arena* last_arena = arena;
-  // for(; last_arena->next != NULL; last_arena = arena->next) {}
-
-  // Arena* current_arena = last_arena;
   Arena* arena = *arena_ptr;
   Arena* current_arena = arena;
   for(; current_arena->previous != NULL;) {

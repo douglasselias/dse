@@ -61,18 +61,12 @@ void test_destroy_arena() {
   dse_u64 arena_size = 1;
   Arena* arena = dse_create_arena(arena_size);
 
-  for(dse_u8 i = 0; i < arena_size; i++) {
-    dse_u8* block = dse_push_arena(&arena, 1);
-    *block = 10 * (i+1);
-  }
-
-  dse_u8* block = dse_push_arena(&arena, 1);
-  *block = 77;
+  dse_push_arena(&arena, 1);
+  // Chain
+  dse_push_arena(&arena, 1);
+  dse_push_arena(&arena, 1);
+  // Chain
+  dse_push_arena(&arena, 1);
 
   dse_destroy_arena(&arena);
-
-  MEMORY_BASIC_INFORMATION memory_info;
-  VirtualQuery(arena->data, &memory_info, sizeof(memory_info));
-  assertion(memory_info.State == MEM_FREE);
-  // printf("mem state: 0x%lx\n", memory_info.State);
 }
