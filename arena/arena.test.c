@@ -115,3 +115,30 @@ void test_pop_arena() {
     assertion(arena->used == 0, "Arena size %lld", arena->used);
   }
 }
+
+void test_freelist() {
+  dse_u64 arena_size = 10;
+  Arena* arena = dse_create_arena(arena_size);
+
+  for(dse_u8 i = 0; i < arena_size; i++) {
+    dse_u8* block = dse_push_arena(&arena, 1);
+    *block = i * 10;
+  }
+
+  dse_u8 free_index = 4;
+  dse_pop_from_index(arena, free_index);
+
+  dse_u8 target = 77;
+  {
+    dse_u8* block = dse_push_arena(&arena, 1);
+    *block = target;
+  }
+
+  for(dse_u8 i = 0; i < arena_size; i++) {
+    if(i == free_index) {
+      assertion(arena->data[i] == target, "Arena data: %d:%d", i, arena->data[i]);
+    } else {
+      assertion(arena->data[i] == i * 10, "Arena data: %d:%d", i, arena->data[i]);
+    }
+  }
+}

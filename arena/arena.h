@@ -13,6 +13,7 @@ typedef struct Arena Arena;
 struct Arena {
   Arena* previous;
   Arena* next;
+  /// @todo: Hardcoded freelist capacity
   dse_s64 freelist[100];
   dse_s64 freelist_index;
   dse_s64 used;
@@ -42,6 +43,8 @@ void dse_pop_arena(Arena** arena, dse_u64 size);
 Arena* dse_create_arena(dse_u64 capacity) {
   Arena* arena = VirtualAlloc(NULL, sizeof(Arena), MEM_COMMIT, PAGE_READWRITE);
   arena->capacity = capacity;
+  /// @todo: Hardcoded freelist capacity
+  arena->freelist_capacity = 100;
   arena->data = VirtualAlloc(NULL, arena->capacity, MEM_RESERVE, PAGE_READWRITE);
   return arena;
 }
@@ -72,11 +75,14 @@ void* dse_push_arena(Arena** arena, dse_u64 size) {
     void* block = (*arena)->data + (*arena)->used;
     (*arena)->used += size;
     return block;
-    // dse_s64 index = arena->freelist[arena->freelist_index];
-    // if(index != 0) {
-    //   arena->freelist[arena->freelist_index++];
-    // }
   } else {
+    dse_s64 index = (*arena)->freelist[(*arena)->freelist_index-1];
+    /// @todo: Cannot have an index zero.
+    if(index != 0) {
+      (*arena)->freelist_index--;
+      return (*arena)->data + index;
+    }
+
     dse_s64 remaining = new_capacity - (*arena)->capacity;
     Arena* new_arena = dse_create_arena(remaining * 2);
     (*arena)->next = new_arena;
@@ -91,7 +97,6 @@ void dse_pop_arena(Arena** arena, dse_u64 size) {
 
   if(new_capacity >= 0) {
     (*arena)->used -= size;
-    // arena->freelist[arena->freelist_index++] = arena->data - arena->used;
   } else {
     if((*arena)->previous != NULL) {
       dse_s64 remainder = size - (*arena)->used;
@@ -101,6 +106,10 @@ void dse_pop_arena(Arena** arena, dse_u64 size) {
       (*arena)->used = 0;
     }
   }
+}
+
+void dse_pop_from_index(Arena* arena, dse_u64 index) {
+  arena->freelist[arena->freelist_index++] = index;
 }
 
 #endif // DSE_ARENA_IMPLEMENTATION
