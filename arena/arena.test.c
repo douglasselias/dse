@@ -1,33 +1,74 @@
 #define DSE_ARENA_IMPLEMENTATION
 #include "arena.h"
 
-// void test_arena_creation() {
-//   Arena* arena = dse_create_arena(8);
-//   assertion(arena->capacity == 8, "Capacity is wrong size, got %lld", arena->capacity);
-//   for(int i = 0; i < 8; i++) {
-//     assertion(arena->data[i] == 0);
-//   }
-// }
-
 void test_arena_push() {
-  dse_u64 arena_size = 8;
+  dse_u64 arena_size = 10;
   Arena* arena = dse_create_arena(arena_size);
 
   for(dse_u8 i = 0; i < arena_size; i++) {
-    void* block = dse_push_arena(arena, 1);
-    *(dse_u8*)block = 10 * (i+1);
+    dse_u8* block = dse_push_arena(arena, 1);
+    *block = 10 * (i+1);
+
+    assertion(arena->data[i] == (10 * (i+1)), "Arena data: %d:%d", i, arena->data[i]);
+  }
+
+  assertion(arena->used == (dse_s64)arena_size);
+}
+
+/// @todo: push overflow
+// void test_arena_push() {
+//   dse_u64 arena_size = 10;
+//   Arena* arena = dse_create_arena(arena_size);
+
+//   for(dse_u8 i = 0; i < arena_size; i++) {
+//     dse_u8* block = dse_push_arena(arena, 1);
+//     *block = 10 * (i+1);
+
+//     assertion(arena->data[i] == (10 * (i+1)), "Arena data: %d:%d", i, arena->data[i]);
+//   }
+
+//   assertion(arena->used == (dse_s64)arena_size);
+// }
+
+
+void test_set_position_back() {
+  dse_u64 arena_size = 10;
+  Arena* arena = dse_create_arena(arena_size);
+
+  for(dse_u8 i = 0; i < arena_size; i++) {
+    dse_u8* block = dse_push_arena(arena, 1);
+    *block = 10 * (i+1);
+  }
+
+  dse_u64 half_arena_size = arena_size / 2;
+  dse_set_position_back(arena, half_arena_size);
+  assertion(arena->used == (dse_s64)half_arena_size);
+
+  for(dse_u8 i = 0; i < half_arena_size; i++) {
+    dse_u8* block = dse_push_arena(arena, 1);
+    *block = 20 * (i+1);
   }
 
   for(dse_u8 i = 0; i < arena_size; i++) {
-    assertion(arena->data[i] == (10 * (i+1)), "Arena data: %d:%d", i, arena->data[i]);
+    if(i < half_arena_size) {
+      assertion(arena->data[i] == (10 * (i+1)), "Arena data: %d:%d", i, arena->data[i]);
+    } else {
+      assertion(arena->data[i] == (20 * (i+1)), "Arena data: %d:%d: Expected %d", i, arena->data[i], (20 * (i+1)));
+    }
   }
 }
 
-// void test_arena_push_overflow() { // Old version of arena
-//   Arena* arena = dse_create_arena(1);
-//   void* block = dse_push_arena(arena, 2);
-//   assertion(block == NULL);
-// }
+void test_arena_push_chaining() {
+  dse_u64 arena_size = 8;
+  Arena* arena = dse_create_arena(arena_size);
+  // printf("Sizeof u8 %zd", sizeof(dse_u8));
+
+  for(dse_u8 i = 0; i < arena_size; i++) {
+    dse_u8* block = dse_push_arena(arena, 1);
+    *block = 10 * (i+1);
+  }
+}
+
 
 // void test_arena_push_overflow_chaining() { /// @todo: not working
 //   Arena* arena = dse_create_arena(1);

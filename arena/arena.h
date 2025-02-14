@@ -1,19 +1,18 @@
 #ifndef DSE_ARENA_H
 #define DSE_ARENA_H
 
-#include<stdbool.h>
-#include<stdint.h>
-
+#include <stdbool.h>
+#include <stdint.h>
 #include <time.h>
-#include<windows.h>
+#include <windows.h>
 
-char* timestamp() {
+char* dse_timestamp() {
   time_t ltime = time(NULL);
   return asctime(localtime(&ltime));
 }
 
-typedef int64_t dse_s64;
-typedef uint8_t dse_u8;
+typedef int64_t  dse_s64;
+typedef uint8_t  dse_u8;
 typedef uint64_t dse_u64;
 
 typedef struct Arena Arena;
@@ -36,44 +35,57 @@ void dse_pop_arena(Arena* arena, dse_u64 size);
 void dse_reset_arena(Arena* arena);
 void dse_set_position_back(Arena* arena, dse_u64 size);
 
-dse_u64 dse_total_bytes_allocated(Arena* arena);
-
-/// @todo: Do the same for pop
-// #define dse_push_arena(arena, size) \
-  // _dse_push_arena(arena, size); printf("At %s on %s:%d Used %zd byte(s)\n", timestamp(), __FILE__, __LINE__, arena->used * sizeof(dse_u8)); \
+#ifdef DSE_ARENA_TIMESTAMP
 
 #define dse_push_arena(arena, size) \
-  _dse_push_arena(arena, size); \
+  _dse_push_arena(arena, size); printf("Push: At %s on %s:%d Used %zd byte(s)\n", dse_timestamp(), __FILE__, __LINE__, arena->used); \
+
+#define dse_pop_arena(arena, size) \
+  _dse_pop_arena(arena, size); printf("Pop: At %s on %s:%d Used %zd byte(s)\n", dse_timestamp(), __FILE__, __LINE__, arena->used); \
+
+#else
+
+#define dse_push_arena(arena, size) _dse_push_arena(arena, size);
+#define dse_pop_arena(arena, size) _dse_pop_arena(arena, size);
+
+#endif
 
 #ifdef DSE_ARENA_IMPLEMENTATION
 
 Arena* dse_create_arena(dse_u64 capacity) {
   Arena* arena = calloc(sizeof(Arena), 1);
-  arena->capacity = capacity * sizeof(dse_u8);
-
-  arena->data = VirtualAlloc(NULL, sizeof(dse_u8) * arena->capacity, MEM_RESERVE, PAGE_READWRITE);
-
-  arena->previous = calloc(sizeof(Arena), 1);
-  arena->next = calloc(sizeof(Arena), 1);
+  arena->capacity = capacity;
+  arena->data = VirtualAlloc(NULL, arena->capacity, MEM_RESERVE, PAGE_READWRITE);
+  // arena->previous = calloc(sizeof(Arena), 1);
+  // arena->next     = calloc(sizeof(Arena), 1);
   return arena;
 }
 
 void dse_destroy_arena(Arena* arena) {
-  /// @todo: Update to chaining
-  free(arena->data);
-  free(arena);
+  Arena* last_arena = arena;
+  for(; last_arena->next != NULL; last_arena = arena->next) {}
+
+  Arena* current_arena = last_arena;
+  for(; current_arena->previous != NULL;) {
+    VirtualFree(current_arena->data, 0, MEM_RELEASE);
+
+    Arena* temp = current_arena;
+    current_arena = current_arena->previous;
+    VirtualFree(temp, 0, MEM_RELEASE);
+  }
+
+  VirtualFree(current_arena->data, 0, MEM_RELEASE);
+  VirtualFree(current_arena, 0, MEM_RELEASE);
 }
 
 void* _dse_push_arena(Arena* arena, dse_u64 size) {
-  dse_u64 byte_size = size * sizeof(dse_u8);
-  dse_s64 size_used = arena->used + byte_size;
-  dse_s64 total_capacity = arena->capacity * sizeof(dse_u8);
-  if(size_used > total_capacity) {
+  if((arena->used + (dse_s64)size) > arena->capacity) {
     /// @todo: Need to think about default size of arena
     Arena* new_arena = dse_create_arena(size * 2);
     arena->next = new_arena;
     new_arena->previous = arena;
     /// @todo: Somehow update the arena to new_arena
+    puts("not called");
     return _dse_push_arena(arena, size);
   } else {
     // dse_s64 index = arena->freelist[arena->freelist_index];
@@ -81,45 +93,46 @@ void* _dse_push_arena(Arena* arena, dse_u64 size) {
     //   arena->freelist[arena->freelist_index++];
     // }
 
-    VirtualAlloc(arena->data, size * sizeof(dse_u8), MEM_COMMIT, PAGE_READWRITE);
-    void* block = arena->data + (arena->used / sizeof(dse_u8));
-    arena->used += size * sizeof(dse_u8);
+    MEMORY_BASIC_INFORMATION memory_info;
+    VirtualQuery(arena->data, &memory_info, sizeof(memory_info));
+    if(memory_info.State != MEM_COMMIT) {
+      VirtualAlloc(arena->data, size, MEM_COMMIT, PAGE_READWRITE);
+    }
+    void* block = arena->data + arena->used;
+    arena->used += size;
     return block;
   }
 }
 
-void dse_pop_arena(Arena* arena, dse_u64 size) {
-  dse_u64 byte_size = size * sizeof(dse_u8);
+void _dse_pop_arena(Arena* arena, dse_u64 size) {
+  dse_u64 byte_size = size;
   dse_s64 size_used = arena->used - byte_size;
   if(size_used >= 0) {
-    arena->used -= size * sizeof(dse_u8);
+    arena->used -= size;
     // arena->freelist[arena->freelist_index++] = arena->data - arena->used;
   } else {
     if(arena->previous != NULL) {
       dse_s64 current_remainder = byte_size - arena->used;
       arena = arena->previous;
-      dse_pop_arena(arena, current_remainder);
+      _dse_pop_arena(arena, current_remainder);
     } else {
-      arena->used = 0;
+      dse_reset_arena(arena);
     }
   }
 }
 
 void dse_reset_arena(Arena* arena) {
-  arena->used = 0;
+  // arena->used = 0;
+  dse_set_position_back(arena, 0);
 }
 
 void dse_set_position_back(Arena* arena, dse_u64 size) {
-  dse_s64 byte_size = size * sizeof(dse_u8);
-  dse_s64 total_capacity = arena->capacity * sizeof(dse_u8);
-  if(byte_size >= total_capacity) {
-    puts("[Arena Error] No memory left");
+  /// @todo: chaining
+  if(size >= (dse_u64)arena->capacity) {
+    puts("[Arena Error][dse_set_position_back] No memory available for this position.");
+    return;
   }
-  arena->used = size * sizeof(dse_u8);
-}
-
-dse_u64 dse_total_bytes_allocated(Arena* arena) {
-  return arena->used * sizeof(dse_u8);
+  arena->used -= size;
 }
 
 #endif // DSE_ARENA_IMPLEMENTATION
