@@ -37,23 +37,23 @@ void test_set_position_back() {
 
   for(dse_u8 i = 0; i < arena_size; i++) {
     dse_u8* block = dse_push_arena(arena, 1);
-    *block = 10 * (i+1);
+    *block = i + 1;
   }
 
   dse_u64 half_arena_size = arena_size / 2;
-  dse_set_position_back(arena, half_arena_size);
+  arena->used -= half_arena_size;
   assertion(arena->used == (dse_s64)half_arena_size);
 
-  for(dse_u8 i = 0; i < half_arena_size; i++) {
+  for(dse_u8 i = 5; i < arena_size; i++) {
     dse_u8* block = dse_push_arena(arena, 1);
-    *block = 20 * (i+1);
+    *block = 10 * (i+1);
   }
 
   for(dse_u8 i = 0; i < arena_size; i++) {
     if(i < half_arena_size) {
-      assertion(arena->data[i] == (10 * (i+1)), "Arena data: %d:%d", i, arena->data[i]);
+      assertion(arena->data[i] == (i+1), "Arena data: %d:%d", i, arena->data[i]);
     } else {
-      assertion(arena->data[i] == (20 * (i+1)), "Arena data: %d:%d: Expected %d", i, arena->data[i], (20 * (i+1)));
+      assertion(arena->data[i] == (10 * (i+1)), "Arena data: %d:%d: Expected %d", i, arena->data[i], (10 * (i+1)));
     }
   }
 }
