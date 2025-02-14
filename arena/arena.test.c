@@ -68,5 +68,50 @@ void test_destroy_arena() {
   // Chain
   dse_push_arena(&arena, 1);
 
-  dse_destroy_arena(&arena);
+  dse_destroy_arena(arena);
+}
+
+void test_pop_arena() {
+  dse_u64 arena_size = 1;
+  Arena* arena = dse_create_arena(arena_size);
+  dse_u8 target_a = 10;
+  dse_u8 target_b = 20;
+
+  {
+    dse_u8* block = dse_push_arena(&arena, 1);
+    *block = target_a;
+  }
+  {
+    dse_u8* block = dse_push_arena(&arena, 1);
+    *block = target_b;
+  }
+
+  {  
+    dse_pop_arena(&arena, 1);
+    
+    dse_u8 value = *(arena->data);
+    assertion(value == target_b, "Value %d", value);
+  }
+
+  {
+    dse_u8* block = dse_push_arena(&arena, 1);
+    *block = target_a;
+    
+    dse_u8 value = *(arena->data);
+    assertion(value == target_a, "Value %d", value);
+  }
+
+  {
+    assertion(arena->capacity == 2, "Arena size %lld", arena->capacity);
+
+    dse_pop_arena(&arena, 1);
+    dse_pop_arena(&arena, 1);
+    
+    assertion(arena->capacity == 1, "Arena size %lld", arena->capacity);
+  }
+
+  {
+    dse_pop_arena(&arena, 1);
+    assertion(arena->used == 0, "Arena size %lld", arena->used);
+  }
 }

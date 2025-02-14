@@ -21,10 +21,10 @@ struct Arena {
 };
 
 Arena* dse_create_arena(dse_u64 capacity);
-void dse_destroy_arena(Arena** arena);
+void dse_destroy_arena(Arena* arena);
 
 void* dse_push_arena(Arena** arena, dse_u64 size);
-void dse_pop_arena(Arena* arena, dse_u64 size);
+void dse_pop_arena(Arena** arena, dse_u64 size);
 
 #ifdef DSE_ARENA_IMPLEMENTATION
 
@@ -46,8 +46,7 @@ Arena* dse_create_arena(dse_u64 capacity) {
   return arena;
 }
 
-void dse_destroy_arena(Arena** arena_ptr) {
-  Arena* arena = *arena_ptr;
+void dse_destroy_arena(Arena* arena) {
   Arena* current_arena = arena;
   for(; current_arena->previous != NULL;) {
     VirtualFree(current_arena->data, 0, MEM_RELEASE);
@@ -87,17 +86,19 @@ void* dse_push_arena(Arena** arena, dse_u64 size) {
   }
 }
 
-void dse_pop_arena(Arena* arena, dse_u64 size) {
-  if((arena->used - (dse_s64)size) >= 0) {
-    arena->used -= size;
+void dse_pop_arena(Arena** arena, dse_u64 size) {
+  dse_s64 new_capacity = (*arena)->used - (dse_s64)size;
+
+  if(new_capacity >= 0) {
+    (*arena)->used -= size;
     // arena->freelist[arena->freelist_index++] = arena->data - arena->used;
   } else {
-    if(arena->previous != NULL) {
-      dse_s64 current_remainder = size - arena->used;
-      arena = arena->previous;
-      dse_pop_arena(arena, current_remainder);
+    if((*arena)->previous != NULL) {
+      dse_s64 remainder = size - (*arena)->used;
+      *arena = (*arena)->previous;
+      dse_pop_arena(arena, remainder);
     } else {
-      arena->used = 0;
+      (*arena)->used = 0;
     }
   }
 }
