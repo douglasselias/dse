@@ -109,12 +109,16 @@ void concat_strings() {
 }
 
 void append_char() {
-  String8 result = STR8("hello");
-  dse_append_char(&result, '!');
-  char* s = "hello!";
-  assertion(result.size == __dse_size(s), "Size is %lld", result.size);
-  for(dse_u64 i = 0; i < result.size; i++) {
-    assertion(result.text[i] == s[i], "Got %c", result.text[i]);
+  String8* result = calloc(sizeof(String8), 1);
+  char* hello = "help";
+  dse_string_copy(hello, result);
+
+  dse_append_char(result, '!');
+  char* s = "help!";
+
+  assertion(result->size == __dse_size(s), "Size is %lld", result->size);
+  for(dse_u64 i = 0; i < result->size; i++) {
+    assertion(result->text[i] == s[i], "Got %c", result->text[i]);
   }
 }
 
@@ -287,6 +291,32 @@ void string_trim() {
   String8 result = *dse_trim(s);
   String8 target = STR8("abc");
   assertion(dse_strings_are_equal(result, target), "Wrong result, got %s", result.text);
+}
+
+void test_string_replace() {
+  String8 abc = STR8("abc-def-ghi");
+  String8* s = calloc(sizeof(String8), 1);
+  s->size = abc.size;
+  s->text = calloc(sizeof(char), s->size);
+  dse_string_copy(abc.text, s);
+
+  dse_string_replace(&s, '-', '+');
+
+  String8 target = STR8("abc+def+ghi");
+  assertion(dse_strings_are_equal(*s, target), "Wrong result, got %s", s->text);
+}
+
+void test_string_replace_string() {
+  String8 abc = STR8("abc<>def<>ghi");
+  String8* s = calloc(sizeof(String8), 1);
+  s->size = abc.size;
+  s->text = calloc(sizeof(char), s->size);
+  dse_string_copy(abc.text, s);
+
+  dse_string_replace_string(&s, (String8)STR8("<>"), (String8)STR8("##"));
+
+  String8 target = STR8("abc##def##ghi");
+  assertion(dse_strings_are_equal(*s, target), "Wrong result, got %s", s->text);
 }
 
 void remove_chars() {

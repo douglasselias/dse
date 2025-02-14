@@ -4,8 +4,6 @@
 #include<stdbool.h>
 #include<stdint.h>
 
-/// @todo: check all for null terminator bugs
-
 typedef int64_t dse_s64;
 typedef uint8_t dse_u8;
 typedef uint64_t dse_u64;
@@ -59,8 +57,8 @@ void dse_string_printf(String8 format, ...);
 String8* dse_int_to_string(dse_s64 number);
 dse_s64 dse_string_to_int(String8 string);
 
-// String8 dse_string_replace(String8 string, char delim); // Should I return or modify in place?
-// String8 dse_string_replace(String8 string, String8 delim);
+void dse_string_replace(String8** string, char target, char replacement);
+void dse_string_replace_string(String8** string, String8 target, String8 replacement);
 
 String8* dse_remove_chars(String8 string, char delim);
 String8* dse_remove_strings(String8 string, String8 delim);
@@ -186,13 +184,14 @@ String8* dse_concat_strings(String8 a, String8 b) {
 }
 
 void dse_append_char(String8* s, char c) {
-  s->size++;
-  char* buffer = calloc(sizeof(char), s->size);
+  char* buffer = calloc(sizeof(char), s->size + 2);
   for(dse_u64 i = 0; i < s->size; i++) {
     buffer[i] = s->text[i];
   }
-  buffer[s->size-1] = c;
+
+  buffer[s->size] = c;
   s->text = buffer;
+  s->size++;
 }
 
 String8* dse_string_join(String8** array_of_strings, dse_u64 count, char delim) {
@@ -342,8 +341,8 @@ dse_s64 dse_substring_start_index(String8 haystack, String8 needle) {
   dse_u64 needle_index   = 0;
 
   while(haystack_index < haystack.size) {
-    char a = dse_char_to_lowercase(haystack.text[haystack_index]);
-    char b = dse_char_to_lowercase(needle.text[needle_index]);
+    char a = haystack.text[haystack_index];
+    char b = needle.text[needle_index];
     if(a == b) {
       needle_index++;
 
@@ -368,9 +367,8 @@ dse_s64 dse_substring_end_index(String8 haystack, String8 needle) {
   dse_u64 needle_index   = 0;
 
   while(haystack_index < haystack.size) {
-    /// @todo: Should this be case insensitive???
-    char a = dse_char_to_lowercase(haystack.text[haystack_index]);
-    char b = dse_char_to_lowercase(needle.text[needle_index]);
+    char a = haystack.text[haystack_index];
+    char b = needle.text[needle_index];
     if(a == b) {
       needle_index++;
 
@@ -504,6 +502,61 @@ String8* dse_trim(String8 string) {
  return dse_slice_string(string, start, end);
 }
 
+void dse_string_replace(String8** string, char target, char replacement) {
+  String8 input = *(*string);
+  String8** strings = dse_string_split(input, target);
+  dse_u64 strings_count = 0;
+  for(dse_u64 i = 0; i < input.size; i++) {
+    if(input.text[i] == target) strings_count++;
+  }
+
+  String8* result = calloc(sizeof(String8), 1);
+
+  for(dse_u64 i = 0; i < strings_count; i++) {
+    String8* s = strings[i];
+    result = dse_concat_strings(*result, *s);
+    dse_append_char(result, replacement);
+  }
+
+  String8* s = strings[strings_count];
+  result = dse_concat_strings(*result, *s);
+
+  *string = result;
+}
+
+void dse_string_replace_string(String8** string, String8 target, String8 replacement) {
+  String8 input = *(*string);
+
+  String8** strings = dse_string_split_string(input, target);
+  dse_u64 strings_count = 0;
+  dse_s64 start_index = 0;
+
+  for(dse_u64 i = 0; i < input.size; i++) {
+    String8* sliced = dse_slice_string(input, i, input.size);
+    start_index = dse_substring_start_index(*sliced, target);
+
+    if(start_index >= 0) {
+      i += start_index + target.size;
+      strings_count++;
+    } else {
+      break;
+    }
+  }
+
+  String8* result = calloc(sizeof(String8), 1);
+
+  for(dse_u64 i = 0; i < strings_count; i++) {
+    String8* s = strings[i];
+    result = dse_concat_strings(*result, *s);
+    result = dse_concat_strings(*result, replacement);
+  }
+
+  String8* s = strings[strings_count];
+  result = dse_concat_strings(*result, *s);
+
+  *string = result;
+}
+
 String8* dse_remove_chars(String8 string, char delim) {
   String8* result = calloc(sizeof(String8), 1);
 
@@ -536,7 +589,6 @@ String8* dse_remove_strings(String8 string, String8 delim) {
       i += start_index + delim.size;
       strings_total++;
     } else {
-      /// @todo: test with uneven input
       strings_total++;
       break;
     }
