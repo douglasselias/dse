@@ -52,7 +52,7 @@ void to_tolowercase() {
   }
 }
 
-void __to_pascal_case() {
+void to_pascal_case() {
   String8 result = STR8("hello world");
   dse_to_pascal_case(result);
   char* target = "Hello World";
@@ -99,7 +99,7 @@ void ascii_code_at() {
   assertion(n == 100, "Got %c", n);
 }
 
-void __concat_strings() {
+void concat_strings() {
   String8 a = STR8("hello ");
   String8 b = STR8("sailor");
   String8* result = dse_concat_strings(a, b);
@@ -109,7 +109,7 @@ void __concat_strings() {
   }
 }
 
-void __append_char() {
+void append_char() {
   String8 result = STR8("hello");
   dse_append_char(&result, '!');
   char* s = "hello!";
@@ -218,6 +218,34 @@ void string_split() {
   assertion(dse_strings_are_equal(*(results[0]), (String8)STR8("hello")));
   assertion(dse_strings_are_equal(*(results[1]), (String8)STR8("world")));
   assertion(dse_strings_are_equal(*(results[2]), (String8)STR8("sometext")));
+}
+
+void test_string_split_string() {
+  String8 string = STR8("hello<>world<>sometext");
+  String8 delim = STR8("<>");
+  String8** results = dse_string_split_string(string, delim);
+  assertion(dse_strings_are_equal(*(results[0]), (String8)STR8("hello")));
+  assertion(dse_strings_are_equal(*(results[1]), (String8)STR8("world")));
+  assertion(dse_strings_are_equal(*(results[2]), (String8)STR8("sometext")));
+}
+
+void test_string_format() {
+  String8 format = STR8("A %s without %s is just a %s.");
+  String8 a = STR8("world");
+  String8 b = STR8("L");
+  String8 c = STR8("word");
+  String8* result = dse_string_format(format, a, b, c);
+  String8 target = STR8("A world without L is just a word.");
+  bool are_equal = dse_strings_are_equal(*result, target);
+  assertion(are_equal, "Strings are not equal, something is wrong with format Expected %s, Got %s", target.text, result->text);
+}
+
+void test_string_printf() {
+  String8 format = STR8("A %s without %s is just a %s.");
+  String8 a = STR8("world");
+  String8 b = STR8("L");
+  String8 c = STR8("word");
+  // dse_string_printf(format, a, b, c);
 }
 
 void int_to_string() {
