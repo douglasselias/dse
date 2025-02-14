@@ -103,10 +103,9 @@ void concat_strings() {
   String8 a = STR8("hello ");
   String8 b = STR8("sailor");
   String8* result = dse_concat_strings(a, b);
-  char* s = "hello sailor";
-  for(dse_u64 i = 0; i < result->size; i++) {
-    assertion(result->text[i] == s[i], "Got %c", result->text[i]);
-  }
+  String8 s = STR8("hello sailor");
+  assertion(result->size == (a.size + b.size), "(concat strings) Got %lld", result->size);
+  assertion(dse_strings_are_equal(*result, s), "(concat strings) Got |%s|", result->text);
 }
 
 void append_char() {
@@ -237,7 +236,7 @@ void test_string_format() {
   String8* result = dse_string_format(format, a, b, c);
   String8 target = STR8("A world without L is just a word.");
   bool are_equal = dse_strings_are_equal(*result, target);
-  assertion(are_equal, "Strings are not equal, something is wrong with format Expected %s, Got %s", target.text, result->text);
+  assertion(are_equal, "(String Format) Expected %s, Got %s", target.text, result->text);
 }
 
 void test_string_printf() {
@@ -276,6 +275,13 @@ void string_to_int() {
   }
 }
 
+void test_slugify() {
+  String8 input = STR8("  ABC_!_@#123 hello  ");
+  String8 result = *dse_slugify(input);
+  String8 target = STR8("abc-----123-hello");
+  assertion(dse_strings_are_equal(result, target), "Wrong result, got |%s|", result.text);
+}
+
 void string_trim() {
   String8 s = STR8("  abc  ");
   String8 result = *dse_trim(s);
@@ -288,6 +294,30 @@ void remove_chars() {
   String8 result = *dse_remove_chars(s, '-');
   String8 target = STR8("abcdefghi");
   assertion(dse_strings_are_equal(result, target), "Wrong result, got %s", result.text);
+}
+
+void test_remove_strings() {
+  String8 input = STR8("abc<>def<>ghi");
+  String8 delim = STR8("<>");
+  String8 result = *dse_remove_strings(input, delim);
+  String8 target = STR8("abcdefghi");
+  assertion(dse_strings_are_equal(result, target), "(test_remove_strings) Wrong result, got %s", result.text);
+}
+
+void test_index_of() {
+  String8 input = STR8("abc<>def<>ghi");
+  char target = '<';
+  dse_s64 i = dse_index_of(input, target, 6);
+  assertion(i == 8, "Got %lld", i);
+  assertion(input.text[i] == target);
+}
+
+void test_last_index_of() {
+  String8 input = STR8("abc<>def<>ghi");
+  char target = '<';
+  dse_s64 i = dse_last_index_of(input, target, 5);
+  assertion(i == 3, "Got %lld", i);
+  assertion(input.text[i] == target);
 }
 
 void simple_fuzzy() {

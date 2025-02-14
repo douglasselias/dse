@@ -4,6 +4,8 @@
 #include<stdbool.h>
 #include<stdint.h>
 
+/// @todo: check all for null terminator bugs
+
 typedef int64_t dse_s64;
 typedef uint8_t dse_u8;
 typedef uint64_t dse_u64;
@@ -61,14 +63,14 @@ dse_s64 dse_string_to_int(String8 string);
 // String8 dse_string_replace(String8 string, String8 delim);
 
 String8* dse_remove_chars(String8 string, char delim);
-// String8 dse_remove_strings(String8 string, String8 delim);
+String8* dse_remove_strings(String8 string, String8 delim);
 
-// String8 dse_slugify(String8 string);
+String8* dse_slugify(String8 string);
 
 String8* dse_trim(String8 string);
 
-// int dse_index_of(String8 string, char search); // , int fromIndex); /// char_index
-// int dse_last_index_of(String8 string, char search); // , int fromIndex);
+dse_s64 dse_index_of(String8 string, char search, dse_u64 from_index);
+dse_s64 dse_last_index_of(String8 string, char search, dse_u64 from_index);
 
 bool simple_fuzzy_match(String8 string, String8 pattern);
 
@@ -168,9 +170,9 @@ dse_u8 dse_ascii_code_at(String8 string, dse_u8 index) {
 }
 
 String8* dse_concat_strings(String8 a, String8 b) {
-  dse_u64 total_size = a.size + b.size + 1;
+  dse_u64 total_size = a.size + b.size;
   String8* result = calloc(sizeof(String8), 1);
-  result->text = calloc(sizeof(char), total_size);
+  result->text = calloc(sizeof(char), total_size + 1); // +1 for null terminator
   result->size = total_size;
   for(dse_u64 i = 0; i < total_size; i++) {
     if(i < a.size)
@@ -413,7 +415,6 @@ String8* dse_string_format(String8 format, ...) {
     }
     format.text++;
   }
-  printf("Strings total %lld\n", strings_total);
 
   String8* result = calloc(sizeof(String8), 1);
 
@@ -421,17 +422,11 @@ String8* dse_string_format(String8 format, ...) {
     String8 s = *(strings[i]);
     String8 arg_string = va_arg(vargs, String8);
 
-    printf("|%s|\n", s.text);
-    printf("|%lld|\n", s.size);
-    printf("|%s|\n", arg_string.text);
-    printf("|%lld|\n", arg_string.size);
-
-    String8 joined_strings = *dse_concat_strings(s, arg_string);
-    printf("Joined: %s\n", joined_strings.text);
-    // result = dse_concat_strings(*result, joined_strings);
+    result = dse_concat_strings(*result, s);
+    result = dse_concat_strings(*result, arg_string);
   }
 
-  // result = dse_concat_strings(*result, *(strings[strings_total]));
+  result = dse_concat_strings(*result, *(strings[strings_total]));
 
   va_end(vargs);
   return result;
@@ -478,6 +473,21 @@ dse_s64 dse_string_to_int(String8 string) {
   return result;
 }
 
+String8* dse_slugify(String8 string) {
+  String8* trimmed_string = dse_trim(string);
+  dse_to_lowercase(*trimmed_string);
+
+  for(dse_u64 i = 0; i < trimmed_string->size; i++) {
+    char c = trimmed_string->text[i];
+    bool is_invalid_letter = !('a' <= c && c <= 'z');
+    bool is_invalid_number = !('0' <= c && c <= '9');
+    bool is_invalid_char = is_invalid_letter && is_invalid_number;
+    if(is_invalid_char) trimmed_string->text[i] = '-';
+  }
+
+  return trimmed_string;
+}
+
 String8* dse_trim(String8 string) {
   dse_u64 start = 0;
   for(dse_u64 i = 0; i < string.size; i++) {
@@ -512,6 +522,50 @@ String8* dse_remove_chars(String8 string, char delim) {
   }
 
   return result;
+}
+
+String8* dse_remove_strings(String8 string, String8 delim) {
+  String8** strings = dse_string_split_string(string, delim);
+  dse_u64 strings_total = 0;
+
+  dse_u64 start_index = 0;
+  for(dse_u64 i = 0; i < string.size; i++) {
+    String8* sliced = dse_slice_string(string, i, string.size);
+    start_index = dse_substring_start_index(*sliced, delim);
+    if(start_index > 0) {
+      i += start_index + delim.size;
+      strings_total++;
+    } else {
+      /// @todo: test with uneven input
+      strings_total++;
+      break;
+    }
+  }
+
+  String8* result = calloc(sizeof(String8), 1);
+
+  for(dse_u64 i = 0; i < strings_total; i++) {
+    String8 s = *(strings[i]);
+    result = dse_concat_strings(*result, s);
+  }
+
+  return result;
+}
+
+dse_s64 dse_index_of(String8 string, char search, dse_u64 from_index) {
+  for(dse_u64 i = from_index; i < string.size; i++) {
+    if(string.text[i] == search) return i;
+  }
+
+  return -1;
+}
+
+dse_s64 dse_last_index_of(String8 string, char search, dse_u64 from_index) {
+  for(dse_s64 i = string.size - 1 - from_index; i >= 0; i--) {
+    if(string.text[i] == search) return i;
+  }
+
+  return -1;
 }
 
 bool simple_fuzzy_match(String8 string, String8 pattern) {
