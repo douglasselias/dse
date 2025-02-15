@@ -13,8 +13,7 @@ typedef struct Arena Arena;
 struct Arena {
   Arena* previous;
   Arena* next;
-  /// @todo: Hardcoded freelist capacity
-  dse_s64 freelist[100];
+  dse_s64* freelist;
   dse_s64 freelist_index;
   dse_s64 used;
   dse_s64 capacity;
@@ -43,17 +42,19 @@ void dse_pop_arena(Arena** arena, dse_u64 size);
 Arena* dse_create_arena(dse_u64 capacity) {
   Arena* arena = VirtualAlloc(NULL, sizeof(Arena), MEM_COMMIT, PAGE_READWRITE);
   arena->capacity = capacity;
-  /// @todo: Hardcoded freelist capacity
-  arena->freelist_capacity = 100;
   arena->data = VirtualAlloc(NULL, arena->capacity, MEM_RESERVE, PAGE_READWRITE);
+  arena->freelist = VirtualAlloc(NULL, sizeof(dse_s64) * capacity, MEM_COMMIT, PAGE_READWRITE);
+  memset(arena->freelist, -1, capacity);
   return arena;
 }
 
 void dse_destroy_arena(Arena* arena) {
   Arena* current_arena = arena;
   for(; current_arena->previous != NULL;) {
-    VirtualFree(current_arena->data, 0, MEM_RELEASE);
+    VirtualFree(current_arena->data,     0, MEM_RELEASE);
     __internal_is_freed(current_arena->data);
+    VirtualFree(current_arena->freelist, 0, MEM_RELEASE);
+    __internal_is_freed(current_arena->freelist);
 
     Arena* temp = current_arena;
     current_arena = current_arena->previous;
@@ -76,9 +77,9 @@ void* dse_push_arena(Arena** arena, dse_u64 size) {
     (*arena)->used += size;
     return block;
   } else {
-    dse_s64 index = (*arena)->freelist[(*arena)->freelist_index-1];
-    /// @todo: Cannot have an index zero.
-    if(index != 0) {
+    dse_s64 freelist_index = (*arena)->freelist_index - 1;
+    if(freelist_index != -1) {
+      dse_s64 index = (*arena)->freelist[freelist_index];
       (*arena)->freelist_index--;
       return (*arena)->data + index;
     }
