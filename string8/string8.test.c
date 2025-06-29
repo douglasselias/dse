@@ -1,148 +1,173 @@
 #define DSE_STRING8_IMPLEMENTATION
 #include "string8.h"
 
-void string_size() {
+void string_size()
+{
   dse_u64 result = __dse_size("hello");
   assertion(result == 5, "Got %lld", result);
 }
 
-void str8_macro() {
+void str8_macro()
+{
   String8 result = STR8("hello");
-  assertion(result.size == 5, "Got %lld", result.size);
+  String8 target = {"hello", 5};
+
+  assertion(result.size == target.size, "Got %lld", result.size);
+  assertion(dse_strings_are_equal(result, target), "Got |%s|", result.text);
 }
 
-void test_strings_equal() {
+void test_strings_equal()
+{
   {
     String8 a = STR8("hello");
     String8 b = STR8("hello");
+
     bool result = dse_strings_are_equal(a, b);
-    assertion(result, "Strings are not equal A: %s, B: %s", a.text, b.text);
+
+    assertion(result == true, "Strings are not equal A: %s, B: %s", a.text, b.text);
   }
 
   {
     String8 a = STR8("hello");
     String8 b = STR8("hello!");
+
     bool result = dse_strings_are_equal(a, b);
+
     assertion(result == false, "Strings are equal??? A: %s, B: %s", a.text, b.text);
   }
 
   {
     String8 a = STR8("hello");
     String8 b = STR8("hellw");
+
     bool result = dse_strings_are_equal(a, b);
+
     assertion(result == false, "Strings are equal??? A: %s, B: %s", a.text, b.text);
   }
 }
 
-void to_uppercase() {
+void to_uppercase()
+{
   String8 result = STR8("hello");
+  String8 target = STR8("HELLO");
+
   dse_to_uppercase(result);
-  char* target = "HELLO";
-  for(dse_u64 i = 0; i < result.size; i++) {
-    assertion(result.text[i] == target[i], "Got %c", result.text[i]);
-  }
+
+  assertion(dse_strings_are_equal(result, target), "Got |%s|", result.text);
 }
 
-void to_tolowercase() {
+void to_lowercase()
+{
   String8 result = STR8("HELLO");
+  String8 target = STR8("hello");
+
   dse_to_lowercase(result);
-  char* target = "hello";
-  for(dse_u64 i = 0; i < result.size; i++) {
-    assertion(result.text[i] == target[i], "Got %c", result.text[i]);
-  }
+
+  assertion(dse_strings_are_equal(result, target), "Got |%s|", result.text);
 }
 
-void to_pascal_case() {
+void to_pascal_case()
+{
   String8 result = STR8("hello world");
+  String8 target = STR8("Hello World");
+
   dse_to_pascal_case(result);
-  char* target = "Hello World";
-  for(dse_u64 i = 0; i < result.size; i++) {
-    assertion(result.text[i] == target[i], "Got %c", result.text[i]);
-  }
+
+  assertion(dse_strings_are_equal(result, target), "Got |%s|", result.text);
 }
 
-void snake_case() {
+void snake_case()
+{
   String8 result = STR8("hello world");
+  String8 target = STR8("hello_world");
+
   dse_to_snake_case(result);
-  char* target = "hello_world";
-  for(dse_u64 i = 0; i < result.size; i++) {
-    assertion(result.text[i] == target[i], "Got %c", result.text[i]);
-  }
+
+  assertion(dse_strings_are_equal(result, target), "Got |%s|", result.text);
 }
 
-void kebab_case() {
+void kebab_case()
+{
   String8 result = STR8("hello world");
+  String8 target = STR8("hello-world");
+
   dse_to_kebab_case(result);
-  char* target = "hello-world";
-  for(dse_u64 i = 0; i < result.size; i++) {
-    assertion(result.text[i] == target[i], "Got %c", result.text[i]);
-  }
+
+  assertion(dse_strings_are_equal(result, target), "Got |%s|", result.text);
 }
 
-void string_copy() {
+void string_copy()
+{
   String8 destination = {};
-  char* source = "hello world";
-  dse_string_copy(source, &destination);
-  for(dse_u64 i = 0; i < destination.size; i++) {
-    assertion(destination.text[i] == source[i], "Got %c", destination.text[i]);
-  }
+  String8 source = STR8("hello world");
+
+  dse_string_copy(source.text, &destination);
+
+  assertion(dse_strings_are_equal(destination, source), "Got |%s|", destination.text);
 }
 
-void ascii_code_to_char() {
+void ascii_code_to_char()
+{
   char c = dse_ascii_code_to_char(100);
   assertion(c == 'd', "Got %c", c);
 }
 
-void ascii_code_at() {
+void ascii_code_at()
+{
   String8 s = STR8("abcd");
   dse_u8 n = dse_ascii_code_at(s, 3);
   assertion(n == 100, "Got %c", n);
 }
 
-void concat_strings() {
-  String8 a = STR8("hello ");
-  String8 b = STR8("sailor");
-  String8* result = dse_concat_strings(a, b);
-  String8 s = STR8("hello sailor");
-  assertion(result->size == (a.size + b.size), "(concat strings) Got %lld", result->size);
-  assertion(dse_strings_are_equal(*result, s), "(concat strings) Got |%s|", result->text);
+void concat_strings()
+{
+  String8 a      = STR8("hello ");
+  String8 b      = STR8("sailor");
+  String8 target = STR8("hello sailor");
+
+  String8 result = dse_concat_strings(a, b);
+
+  assertion(result.size == (a.size + b.size), "Got %lld", result.size);
+  assertion(dse_strings_are_equal(result, target), "Got |%s|", result.text);
 }
 
-void append_char() {
-  String8* result = calloc(sizeof(String8), 1);
+void append_char()
+{
+  String8 result = {0};
   char* hello = "help";
-  dse_string_copy(hello, result);
+
+  dse_string_copy(hello, &result);
 
   dse_append_char(result, '!');
-  char* s = "help!";
+  String8 expected = STR8("help!");
 
-  assertion(result->size == __dse_size(s), "Size is %lld", result->size);
-  for(dse_u64 i = 0; i < result->size; i++) {
-    assertion(result->text[i] == s[i], "Got %c", result->text[i]);
-  }
+  assertion(result.size == expected.size, "Size is %lld", result.size);
+  assertion(dse_strings_are_equal(result, expected), "Got |%s|", result.text);
 }
 
 void string_joins() {
   String8 a = STR8("hello");
   String8 b = STR8("sailor");
   String8 c = STR8("ready?");
+
   String8** arr = calloc(sizeof(String8*), 3);
+
   arr[0] = calloc(sizeof(String8), 1);
   arr[0] = &a;
   arr[1] = calloc(sizeof(String8), 1);
   arr[1] = &b;
   arr[2] = calloc(sizeof(String8), 1);
   arr[2] = &c;
-  String8* result = dse_string_join(arr, 3, '!');
-  char* s = "hello!sailor!ready?";
 
-  assertion(result->size == (a.size + b.size + c.size + 2), "Size is %lld", result->size);
-  for(dse_u64 i = 0; i < result->size; i++) {
-    assertion(result->text[i] == s[i], "Got %c", result->text[i]);
-  }
+  String8 result = dse_string_join(arr, 3, '!');
+  String8 expected = STR8("hello!sailor!ready?");
+
+  assertion(result.size == expected.size, "Size is %lld", result.size);
+  assertion(dse_strings_are_equal(result, expected), "Got |%s|", result.text);
 }
 
-void string_joins_strings() {
+void string_joins_strings()
+{
   String8 a = STR8("hello");
   String8 b = STR8("sailor");
   String8 c = STR8("ready?");
@@ -156,8 +181,7 @@ void string_joins_strings() {
   arr[1] = &b;
   arr[2] = &c;
 
-  String8* r = dse_string_join_string(arr, 3, delim);
-  String8 result = *r;
+  String8 result = dse_join_strings_with_string(arr, 3, delim);
   String8 target = STR8("hello<>sailor<>ready?");
 
   assertion(result.size == target.size, "Size is %lld", result.size);
@@ -209,7 +233,7 @@ void sub_end_index() {
 
 void slice_string() {
   String8 s = STR8("carpentry");
-  String8 slice = *dse_slice_string(s, 3, 6);
+  String8 slice = dse_slice_string(s, 3, 6);
   String8 target = STR8("pen");
   assertion(dse_strings_are_equal(slice, target), "Strings are not equal, got slice: %s", slice.text);
 }
@@ -217,19 +241,19 @@ void slice_string() {
 void string_split() {
   String8 string = STR8("hello\nworld\nsometext");
   char delim = '\n';
-  String8** results = dse_string_split(string, delim);
-  assertion(dse_strings_are_equal(*(results[0]), (String8)STR8("hello")));
-  assertion(dse_strings_are_equal(*(results[1]), (String8)STR8("world")));
-  assertion(dse_strings_are_equal(*(results[2]), (String8)STR8("sometext")));
+  String8* results = dse_split_string_with_char(string, delim);
+  assertion(dse_strings_are_equal(results[0], (String8)STR8("hello")));
+  assertion(dse_strings_are_equal(results[1], (String8)STR8("world")));
+  assertion(dse_strings_are_equal(results[2], (String8)STR8("sometext")));
 }
 
 void test_string_split_string() {
   String8 string = STR8("hello<>world<>sometext");
   String8 delim = STR8("<>");
-  String8** results = dse_string_split_string(string, delim);
-  assertion(dse_strings_are_equal(*(results[0]), (String8)STR8("hello")));
-  assertion(dse_strings_are_equal(*(results[1]), (String8)STR8("world")));
-  assertion(dse_strings_are_equal(*(results[2]), (String8)STR8("sometext")));
+  String8* results = dse_split_string_with_string(string, delim);
+  assertion(dse_strings_are_equal(results[0], (String8)STR8("hello")));
+  assertion(dse_strings_are_equal(results[1], (String8)STR8("world")));
+  assertion(dse_strings_are_equal(results[2], (String8)STR8("sometext")));
 }
 
 void test_string_format() {
@@ -237,10 +261,10 @@ void test_string_format() {
   String8 a = STR8("world");
   String8 b = STR8("L");
   String8 c = STR8("word");
-  String8* result = dse_string_format(format, a, b, c);
+  String8 result = dse_string_format(format, a, b, c);
   String8 target = STR8("A world without L is just a word.");
-  bool are_equal = dse_strings_are_equal(*result, target);
-  assertion(are_equal, "(String Format) Expected %s, Got %s", target.text, result->text);
+  bool are_equal = dse_strings_are_equal(result, target);
+  assertion(are_equal, "(String Format) Expected %s, Got %s", target.text, result.text);
 }
 
 void test_string_printf() {
@@ -253,10 +277,10 @@ void test_string_printf() {
 
 void int_to_string() {
   dse_u64 n = 123456789;
-  String8* result = dse_int_to_string(n);
+  String8 result = dse_int_to_string(n);
   String8 n_str = STR8("123456789");
-  assertion(result->size == n_str.size, "Got size: %lld, but expected %lld", result->size, n_str.size);
-  assertion(dse_strings_are_equal(*result, n_str), "Got result: %s |", result->text);
+  assertion(result.size == n_str.size, "Got size: %lld, but expected %lld", result.size, n_str.size);
+  assertion(dse_strings_are_equal(result, n_str), "Got result: %s |", result.text);
 }
 
 void string_to_int() {
@@ -277,51 +301,51 @@ void string_to_int() {
     dse_s64 n = dse_string_to_int(n_str);
     assertion(n == 123456789, "Got %lld", n);
   }
+
+  {
+    String8 n_str = STR8("-123456789");
+    dse_s64 n = dse_string_to_int(n_str);
+    assertion(n == -123456789, "Got %lld", n);
+  }
 }
 
 void test_slugify() {
   String8 input = STR8("  ABC_!_@#123 hello  ");
-  String8 result = *dse_slugify(input);
+  String8 result = dse_slugify(input);
   String8 target = STR8("abc-----123-hello");
   assertion(dse_strings_are_equal(result, target), "Wrong result, got |%s|", result.text);
 }
 
 void string_trim() {
   String8 s = STR8("  abc  ");
-  String8 result = *dse_trim(s);
+  String8 result = dse_trim(s);
   String8 target = STR8("abc");
-  assertion(dse_strings_are_equal(result, target), "Wrong result, got %s", result.text);
+  assertion(dse_strings_are_equal(result, target), "Got %s", result.text);
 }
 
-void test_string_replace() {
-  String8 abc = STR8("abc-def-ghi");
-  String8* s = calloc(sizeof(String8), 1);
-  s->size = abc.size;
-  s->text = calloc(sizeof(char), s->size);
-  dse_string_copy(abc.text, s);
-
-  dse_string_replace(&s, '-', '+');
-
+void test_string_replace()
+{
+  String8 input  = STR8("abc-def-ghi");
   String8 target = STR8("abc+def+ghi");
-  assertion(dse_strings_are_equal(*s, target), "Wrong result, got %s", s->text);
+
+  String8 result = dse_string_replace(input, '-', '+');
+
+  assertion(dse_strings_are_equal(result, target), "Got %s", result.text);
 }
 
-void test_string_replace_string() {
-  String8 abc = STR8("abc<>def<>ghi");
-  String8* s = calloc(sizeof(String8), 1);
-  s->size = abc.size;
-  s->text = calloc(sizeof(char), s->size);
-  dse_string_copy(abc.text, s);
-
-  dse_string_replace_string(&s, (String8)STR8("<>"), (String8)STR8("##"));
-
+void test_string_replace_string()
+{
+  String8 input  = STR8("abc<>def<>ghi");
   String8 target = STR8("abc##def##ghi");
-  assertion(dse_strings_are_equal(*s, target), "Wrong result, got %s", s->text);
+
+  String8 result = dse_string_replace_string(input, (String8)STR8("<>"), (String8)STR8("##"));
+
+  assertion(dse_strings_are_equal(result, target), "Got %s", result.text);
 }
 
 void remove_chars() {
   String8 s = STR8("abc-def-ghi");
-  String8 result = *dse_remove_chars(s, '-');
+  String8 result = dse_remove_chars(s, '-');
   String8 target = STR8("abcdefghi");
   assertion(dse_strings_are_equal(result, target), "Wrong result, got %s", result.text);
 }
@@ -329,7 +353,7 @@ void remove_chars() {
 void test_remove_strings() {
   String8 input = STR8("abc<>def<>ghi");
   String8 delim = STR8("<>");
-  String8 result = *dse_remove_strings(input, delim);
+  String8 result = dse_remove_strings(input, delim);
   String8 target = STR8("abcdefghi");
   assertion(dse_strings_are_equal(result, target), "(test_remove_strings) Wrong result, got %s", result.text);
 }
@@ -342,7 +366,8 @@ void test_index_of() {
   assertion(input.text[i] == target);
 }
 
-void test_last_index_of() {
+void test_last_index_of()
+{
   String8 input = STR8("abc<>def<>ghi");
   char target = '<';
   dse_s64 i = dse_last_index_of(input, target, 5);
@@ -350,7 +375,8 @@ void test_last_index_of() {
   assertion(input.text[i] == target);
 }
 
-void simple_fuzzy() {
+void simple_fuzzy()
+{
   { 
     String8 string = STR8("carpentry");
     String8 pattern = STR8("carry");
