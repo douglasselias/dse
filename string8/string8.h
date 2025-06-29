@@ -7,7 +7,6 @@
   #define true  1
 #endif
 
-/// TODO: Need prefix?
 typedef   signed long long dse_s64;
 typedef unsigned char      dse_u8;
 typedef unsigned long long dse_u64;
@@ -16,26 +15,24 @@ typedef unsigned long long dse_u64;
   #define DSE_MEM_ALLOC(total_bytes) malloc(total_bytes)
 #endif
 
-/// TODO: Need prefix?
+/// TODO: Need prefix
 typedef struct
 {
   char* text;
   dse_u64 size;
 } String8;
 
-/// TODO: Need prefix?
-dse_u64 __dse_size(char* s);
+dse_u64 __dse_string_size(char* string);
 
-/// TODO: Need prefix?
-#define STR8(string) { string, __dse_size(string) }
+#define DSE_STR8(string) { string, __dse_string_size(string) }
 
 bool dse_strings_are_equal(String8 a, String8 b);
 
 char dse_char_to_uppercase(char c);
 char dse_char_to_lowercase(char c);
 
-void dse_to_uppercase  (String8 s);
-void dse_to_lowercase  (String8 s);
+String8 dse_to_uppercase  (String8 s);
+String8 dse_to_lowercase  (String8 s);
 void dse_to_pascal_case(String8 s);
 void dse_to_camel_case (String8 s);
 void dse_to_snake_case (String8 s);
@@ -92,7 +89,7 @@ bool simple_fuzzy_match(String8 string, String8 pattern);
 
 #ifdef DSE_STRING8_IMPLEMENTATION
 
-dse_u64 __dse_size(char* s)
+dse_u64 __dse_string_size(char* s)
 {
   dse_u64 size = 0;
   while(*s++ != '\0') size++;
@@ -121,30 +118,40 @@ char dse_char_to_lowercase(char c)
   return c + 32;
 }
 
-void dse_to_uppercase(String8 s)
+String8 dse_to_uppercase(String8 s)
 {
-  for(dse_u64 i = 0; i < s.size; i++)
+  String8 result = {0};
+  dse_string_copy(s.text, &result);
+
+  for(dse_u64 i = 0; i < result.size; i++)
   {
-    char c = s.text[i];
+    char c = result.text[i];
 
     if('a' <= c && c <= 'z')
     {
-      s.text[i] = dse_char_to_uppercase(c);
+      result.text[i] = dse_char_to_uppercase(c);
     }
   }
+
+  return result;
 }
 
-void dse_to_lowercase(String8 s)
+String8 dse_to_lowercase(String8 s)
 {
-  for(dse_u64 i = 0; i < s.size; i++)
+  String8 result = {};
+  dse_string_copy(s.text, &result);
+
+  for(dse_u64 i = 0; i < result.size; i++)
   {
-    char c = s.text[i];
+    char c = result.text[i];
 
     if('A' <= c && c <= 'Z')
     {
-      s.text[i] = dse_char_to_lowercase(c);
+      result.text[i] = dse_char_to_lowercase(c);
     }
   }
+
+  return result;
 }
 
 void dse_to_pascal_case(String8 s)
@@ -206,9 +213,9 @@ void dse_to_kebab_case(String8 s)
 
 void dse_string_copy(char* source, String8* destination)
 {
-  dse_u64 source_size = __dse_size(source);
+  dse_u64 source_size = __dse_string_size(source);
   destination->size = source_size;
-  destination->text = DSE_MEM_ALLOC(sizeof(char) * source_size);
+  destination->text = (char*)DSE_MEM_ALLOC(sizeof(char) * source_size);
 
   for(dse_u64 i = 0; i < source_size; i++)
   {
@@ -231,7 +238,7 @@ String8 dse_concat_strings(String8 a, String8 b)
   dse_u64 total_size = a.size + b.size;
 
   String8 result = {0};
-  result.text = calloc(sizeof(char), total_size + 1); // +1 for null terminator
+  result.text = (char*)DSE_MEM_ALLOC(sizeof(char) * (total_size + 1)); // +1 for null terminator
   result.size = total_size;
 
   /// TODO: Compare performance
@@ -267,7 +274,7 @@ void dse_append_char(String8 s, char c)
 {
   /// TODO: Should have a null terminator?
   // char* buffer = calloc(sizeof(char), s.size + 2);
-  char* buffer = calloc(sizeof(char), s.size + 1);
+  char* buffer = (char*)DSE_MEM_ALLOC(sizeof(char) * s.size + 1);
 
   for(dse_u64 i = 0; i < s.size; i++)
   {
@@ -294,7 +301,7 @@ String8 dse_string_join(String8** array_of_strings, dse_u64 count, char delim)
   total_size--;
 
   String8 result = {0};
-  result.text = DSE_MEM_ALLOC(sizeof(char) * total_size);
+  result.text = (char*)DSE_MEM_ALLOC(sizeof(char) * total_size);
   result.size = total_size;
 
   dse_u64 global_index = 0;
@@ -327,7 +334,7 @@ String8 dse_join_strings_with_string(String8** array_of_strings, dse_u64 count, 
   }
   total_size += delim.size * (count - 1);
   String8 result = {0};
-  result.text = calloc(sizeof(char), total_size);
+  result.text = (char*)DSE_MEM_ALLOC(sizeof(char) * total_size);
   result.size = total_size;
 
   dse_u64 global_index = 0;
@@ -356,7 +363,7 @@ String8* dse_split_string_with_char(String8 string, char delim) {
     if(string.text[i] == delim) result_size++;
   }
 
-  String8* result = calloc(sizeof(String8), result_size + 1);
+  String8* result = (String8*)DSE_MEM_ALLOC(sizeof(String8) * (result_size + 1));
   dse_u64 result_index = 0;
   dse_u64 start_index = 0;
   for(dse_u64 i = 0; i < string.size; i++) {
@@ -384,7 +391,7 @@ String8* dse_split_string_with_string(String8 string, String8 delim) {
   }
 
   dse_u64 final_result_size = result_size + 1;
-  String8* result = calloc(sizeof(String8), final_result_size);
+  String8* result = (String8*)DSE_MEM_ALLOC(sizeof(String8) * final_result_size);
 
   dse_u64 result_index = 0;
   dse_s64 start_index  = 0;
@@ -499,7 +506,7 @@ String8 dse_slice_string(String8 string, dse_u64 start, dse_u64 end)
 {
   String8 slice = {0};
   slice.size = end - start;
-  slice.text = calloc(sizeof(char), slice.size + 1);
+  slice.text = (char*)DSE_MEM_ALLOC(sizeof(char) * (slice.size + 1));
 
   dse_u64 slice_index = 0;
   for(dse_u64 i = start; i < end; i++)
@@ -512,60 +519,62 @@ String8 dse_slice_string(String8 string, dse_u64 start, dse_u64 end)
   return slice;
 }
 
-String8 dse_string_format(String8 format, ...) {
-  va_list vargs;
-  va_start(vargs, format);
+// String8 dse_string_format(String8 format, ...)
+// {
+//   va_list vargs;
+//   va_start(vargs, format);
 
-  String8* strings = dse_split_string_with_string(format, (String8)STR8("%s"));
-  dse_u64 strings_total = 0;
+//   String8* strings = dse_split_string_with_string(format, (String8)DSE_STR8("%s"));
+//   dse_u64 strings_total = 0;
 
-  while(*format.text) {
-    if(*format.text == '%' && *(format.text+1) == 's') {
-      strings_total++;
-      format.text++;
-    }
-    format.text++;
-  }
+//   while(*format.text) {
+//     if(*format.text == '%' && *(format.text+1) == 's') {
+//       strings_total++;
+//       format.text++;
+//     }
+//     format.text++;
+//   }
 
-  String8 result = {0};
+//   String8 result = {0};
 
-  for(dse_u64 i = 0; i < strings_total; i++) {
-    String8 arg_string = va_arg(vargs, String8);
+//   for(dse_u64 i = 0; i < strings_total; i++) {
+//     String8 arg_string = va_arg(vargs, String8);
 
-    result = dse_concat_strings(result, strings[i]);
-    result = dse_concat_strings(result, arg_string);
-  }
+//     result = dse_concat_strings(result, strings[i]);
+//     result = dse_concat_strings(result, arg_string);
+//   }
 
-  result = dse_concat_strings(result, strings[strings_total]);
+//   result = dse_concat_strings(result, strings[strings_total]);
 
-  va_end(vargs);
-  return result;
-}
+//   va_end(vargs);
+//   return result;
+// }
 
-void dse_string_printf(String8 format, ...) {
-  va_list vargs;
-  va_start(vargs, format);
+// void dse_string_printf(String8 format, ...)
+// {
+//   va_list vargs;
+//   va_start(vargs, format);
 
-  while(*format.text) {
-    if(*format.text == '%' && *(format.text+1) == 's') {
-      String8 string = va_arg(vargs, String8);
-      printf("%s", string.text);
-      format.text++;
-    } else putchar(*format.text);
-    format.text++;
-  }
+//   while(*format.text) {
+//     if(*format.text == '%' && *(format.text+1) == 's') {
+//       String8 string = va_arg(vargs, String8);
+//       printf("%s", string.text);
+//       format.text++;
+//     } else putchar(*format.text);
+//     format.text++;
+//   }
 
-  va_end(vargs);
-}
+//   va_end(vargs);
+// }
 
 String8 dse_int_to_string(dse_s64 number)
 {
   String8 result = {0};
   /// TODO: 21 is a hardcoded number
-  result.text = calloc(sizeof(char), 21);
+  result.text = (char*)DSE_MEM_ALLOC(sizeof(char) * 21);
 
   sprintf(result.text, "%lld", number);
-  result.size = __dse_size(result.text);
+  result.size = __dse_string_size(result.text);
 
   return result;
 }
@@ -654,7 +663,7 @@ String8 dse_remove_chars(String8 string, char delim)
   }
 
   dse_u64 result_size = string.size - delim_size;
-  result.text = DSE_MEM_ALLOC(sizeof(char) * result_size);
+  result.text = (char*)DSE_MEM_ALLOC(sizeof(char) * result_size);
   result.size = result_size;
 
   dse_u64 result_index = 0;
