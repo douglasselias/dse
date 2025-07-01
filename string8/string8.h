@@ -88,6 +88,11 @@ bool simple_fuzzy_match(String8 string, String8 pattern);
 String8 dse_string_view(String8 string, dse_u64 start_index, dse_u64 end_index);
 String8 dse_string_view_size(String8 string, dse_u64 start_index, dse_u64 size);
 
+/// TODO: Implement
+char* dse_to_c_string(String8 s);
+String8 dse_c_string_to_string8(char* s);
+/// ___
+
 #ifdef DSE_STRING8_IMPLEMENTATION
 
 dse_u64 __dse_string_size(char *s)
