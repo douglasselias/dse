@@ -132,3 +132,25 @@ void list_files_from_dir(const char* path)
     }
   } while(FindNextFile(find_file_handle, &ffd) != 0);
 }
+
+#include <intrin.h>
+// #include <windows.h>
+
+u64 os_timer_freq()
+{
+  LARGE_INTEGER f;
+  QueryPerformanceFrequency(&f);
+  return f.QuadPart;
+}
+
+u64 os_timer()
+{
+  LARGE_INTEGER c;
+  QueryPerformanceCounter(&c);
+  return c.QuadPart;
+}
+
+u64 cpu_timer()
+{
+  return __rdtsc();
+}
