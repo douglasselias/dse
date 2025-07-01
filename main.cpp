@@ -6,6 +6,9 @@
 #define DSE_ARENA_IMPLEMENTATION
 #include "arena/arena.h"
 
+#define DSE_ARRAY_IMPLEMENTATION
+#include "array/array.h"
+
 #define DSE_INIT_TESTS()              \
   dse_u64 dse_failed_tests_count = 0; \
 
@@ -622,6 +625,62 @@ int main()
         ASSERTION(arena->data[i] == i * 10, "Arena data: %d:%d", i, arena->data[i]);
       }
     }
+  }
+
+  { // Destroy array test
+    Array array = create_array(1);
+    destroy_array(&array);
+    ASSERTION(array.capacity == 0, "Capacity is not zero, is %lld", array.capacity);
+  }
+
+  { // Append array test
+    Array array = create_array(1);
+
+    dse_u8 first_target = 10, second_target = 20;
+    array_append(&array, first_target);
+    array_append(&array, second_target);
+
+    ASSERTION(array.data[0] == first_target,  "data[0] is not %d, but got %d", first_target, array.data[0]);
+    ASSERTION(array.data[1] == second_target, "data[1] is not %d, but got %d", second_target, array.data[1]);
+    ASSERTION(array.capacity == 2, "Capacity is not %d, but got %lld", 2, array.capacity);
+    ASSERTION(array.size == 2, "Size is not %d, but got %lld", 2, array.size);
+  }
+
+  { // Remove by index test
+    Array array = create_array(1);
+
+    dse_u8 first_target = 10, second_target = 20, third_target = 30;
+    array_append(&array, first_target);
+    array_append(&array, second_target);
+    array_append(&array, third_target);
+
+    print_array(array);
+    array_remove_by_index(&array, 1);
+    print_array(array);
+
+    ASSERTION(array.data[0] == first_target,  "data[0] is not %d, but got %d", first_target, array.data[0]);
+    ASSERTION(array.data[1] == third_target, "data[1] is not %d, but got %d", third_target, array.data[1]);
+    ASSERTION(array.capacity == 4, "Capacity is not %d, but got %lld", 4, array.capacity);
+    ASSERTION(array.size == 2, "Size is not %d, but got %lld", 2, array.size);
+  }
+
+  { // Reset array test
+    Array array = create_array(1);
+
+    dse_u8 first_target = 10, second_target = 20, third_target = 30;
+    array_append(&array, first_target);
+    array_append(&array, second_target);
+
+    reset_array(&array);
+    array_append(&array, third_target);
+
+    printf("Reset array test: ");
+    print_array(array);
+
+    ASSERTION(array.data[0] == third_target,  "data[0] is not %d, but got %d", third_target, array.data[0]);
+    ASSERTION(array.data[1] == second_target, "data[1] is not %d, but got %d", second_target, array.data[1]);
+    ASSERTION(array.capacity == 2, "Capacity is not %d, but got %lld", 2, array.capacity);
+    ASSERTION(array.size == 1, "Size is not %d, but got %lld", 1, array.size);
   }
 
   DSE_PRINT_ALL_TESTS_PASSED();
