@@ -14,3 +14,16 @@
     info->Release();
   }
 #endif
+
+
+static void ActivateD3D11DebugInfo(ID3D11Device *Device)
+{
+    ID3D11InfoQueue *Info;
+    if(SUCCEEDED(IProvideClassInfo_QueryInterface(Device, &IID_ID3D11InfoQueue, (void**)&Info)))
+    {
+        ID3D11InfoQueue_SetBreakOnSeverity(Info, D3D11_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+        ID3D11InfoQueue_SetBreakOnSeverity(Info, D3D11_MESSAGE_SEVERITY_ERROR, TRUE);
+
+        ID3D11InfoQueue_Release(Info);
+    }
+}
