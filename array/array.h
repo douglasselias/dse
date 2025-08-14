@@ -25,37 +25,37 @@ typedef struct
   dse_u64 size;
   dse_u64 capacity;
   dse_u8 *data;
-} Array;
+} DSE_Array;
 
-Array create_array(dse_u64 capacity);
-void destroy_array(Array *array);
-void reset_array(Array *array);
-void array_append(Array *array, dse_u8 value);
-void array_remove_by_index(Array *array, dse_u64 index);
-void print_array(Array array);
+DSE_Array dse_create_array(dse_u64 capacity);
+void dse_destroy_array(DSE_Array *array);
+void dse_reset_array(DSE_Array *array);
+void dse_array_append(DSE_Array *array, dse_u8 value);
+void dse_array_remove_by_index(DSE_Array *array, dse_u64 index);
+void dse_print_array(DSE_Array array);
 
 #ifdef DSE_ARRAY_IMPLEMENTATION
 
-Array create_array(dse_u64 capacity)
+DSE_Array dse_create_array(dse_u64 capacity)
 {
-  Array array = {0};
+  DSE_Array array = {0};
   array.capacity = capacity;
   array.data     = (dse_u8*)DSE_MEM_ALLOC(sizeof(dse_u8) * capacity);
   return array;
 }
 
-void destroy_array(Array *array)
+void dse_destroy_array(DSE_Array *array)
 {
   array->capacity = 0;
   DSE_MEM_FREE(array->data);
 }
 
-void reset_array(Array *array)
+void dse_reset_array(DSE_Array *array)
 {
   array->size = 0;
 }
 
-void array_append(Array *array, dse_u8 value)
+void dse_array_append(DSE_Array *array, dse_u8 value)
 {
   if (array->size + 1 <= array->capacity)
   {
@@ -71,7 +71,7 @@ void array_append(Array *array, dse_u8 value)
   array->size++;
 }
 
-void array_remove_by_index(Array *array, dse_u64 index)
+void dse_array_remove_by_index(DSE_Array *array, dse_u64 index)
 {
   dse_u64 on_the_right = array->size - index - 1;
   dse_u8 *dest = array->data + index;
@@ -80,7 +80,7 @@ void array_remove_by_index(Array *array, dse_u64 index)
   array->size--;
 }
 
-void print_array(Array array)
+void dse_print_array(DSE_Array array)
 {
   printf("[");
 
