@@ -1,7 +1,7 @@
-#include "../base_types.h"
-
 #ifndef DSE_OS_H
 #define DSE_OS_H
+
+#include "../base_types.h"
 
 #define INFINITE_TIMEOUT 0xFFFFFFFF
 
