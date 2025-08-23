@@ -44,6 +44,13 @@ void print_user(User *u)
 
 DSE_CREATE_CUSTOM_ARRAY_TYPE_FUNCTIONS(User, user);
 
+void print_u64(dse_u64 *number)
+{
+  printf("  %lld\n", *number);
+}
+
+DSE_CREATE_CUSTOM_ARRAY_TYPE_FUNCTIONS(dse_u64, u64);
+
 void dse_print_array(DSE_Array array)
 {
   printf("[");
@@ -739,6 +746,22 @@ int main()
     #undef EMAIL
 
     dse_print_array_user(array);
+  }
+
+  {
+    DSE_Array array = dse_create_array(3);
+
+    dse_u64 number_2 = 200000;
+
+    array_append_u64(&array, (dse_u64)100000);
+    array_append_u64(&array, (dse_u64)number_2);
+    array_append_u64(&array, (dse_u64)300000);
+
+    dse_u64 *number = array_get_by_index_u64(array, 1);
+
+    ASSERTION(*number == number_2, "Number is not %lld, but got %lld\n", number_2, *number);
+
+    dse_print_array_u64(array);
   }
 
   DSE_PRINT_ALL_TESTS_PASSED();
