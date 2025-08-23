@@ -8,6 +8,12 @@
 #define dse_thread_handle void*
 typedef void dse_thread_proc(void *args);
 
+Enum(DSE_AllocType)
+{
+  RESERVE_MEMORY = 0x00002000,
+  COMMIT_MEMORY  = 0x00001000,
+};
+
 u8 dse_generate_random_number();
 u32 dse_count_threads();
 dse_thread_handle dse_create_thread(dse_thread_proc *thread_proc, void *args);
@@ -16,6 +22,10 @@ void dse_wait_for_all_threads(dse_thread_handle *handles, u64 threads_count, u32
 void dse_atomic_increment(s64 *number);
 u64 dse_get_cpu_timer();
 void dse_list_files_from_dir(char *path);
+void* dse_alloc(u64 capacity, DSE_AllocType allocation_type);
+void dse_commit_memory(void *memory, u64 capacity);
+void dse_free_memory(void *memory);
+bool dse_has_freed_memory(void *memory);
 
 #ifdef DSE_OS_IMPLEMENTATION
 
@@ -140,6 +150,40 @@ void dse_list_files_from_dir(char *path)
   depth--;
 }
 
+// typedef enum
+// {
+//   RESERVE_MEMORY,
+//   COMMIT_MEMORY,
+// } AllocType;
+
+// Enum(DSE_AllocType)
+// {
+//   RESERVE_MEMORY = 0x00002000,
+//   COMMIT_MEMORY  = 0x00001000,
+// };
+
+void* dse_alloc(u64 capacity, DSE_AllocType allocation_type)
+{
+  // TODO: Docs recommend to use both reserve and commit for allocation. But it seems to work fine if its called with just commit.
+  return VirtualAlloc(null, capacity, allocation_type, PAGE_READWRITE);
+}
+
+void dse_commit_memory(void *memory, u64 capacity)
+{
+  VirtualAlloc(memory, capacity, COMMIT_MEMORY, PAGE_READWRITE);
+}
+
+void dse_free_memory(void *memory)
+{
+  VirtualFree(memory, 0, MEM_RELEASE);
+}
+
+bool dse_has_freed_memory(void *memory)
+{
+  MEMORY_BASIC_INFORMATION memory_info;
+  VirtualQuery(memory, &memory_info, sizeof(memory_info));
+  return memory_info.State == MEM_FREE;
+}
 
 #ifdef DSE_OS_STRIP_PREFIX
   #define generate_random_number dse_generate_random_number
@@ -154,6 +198,10 @@ void dse_list_files_from_dir(char *path)
   #define get_os_timer           dse_get_os_timer
   #define get_cpu_timer          dse_get_cpu_timer
   #define list_files_from_dir    dse_list_files_from_dir
+  #define alloc                  dse_alloc
+  #define commit_memory          dse_commit_memory
+  #define free_memory            dse_free_memory
+  #define has_freed_memory       dse_has_freed_memory
 #endif // DSE_OS_STRIP_PREFIX
 
 #endif // DSE_OS_IMPLEMENTATION

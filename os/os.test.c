@@ -3,14 +3,6 @@
 #include <stdio.h>
 #include "os.h"
 
-
-// enum V {};
-
-void alloc()
-{
-  // VirtualAlloc(null, capacity, MEM_RESERVE, PAGE_READWRITE);
-}
-
 void custom_thread_proc(void *args)
 {
   printf("Printing args from thread: %d\n", *(u8*)args);
@@ -55,6 +47,30 @@ int main()
   u64 freq     = get_os_timer_frequency();
   u64 os_timer = get_os_timer();
   printf("Freq: %lld, Timer: %lld\n", freq, os_timer);
+
+  u64 *mem = alloc(sizeof(u64) * 3, RESERVE_MEMORY);
+
+  for(u64 i = 0; i < 3; i++)
+  {
+    commit_memory(&mem[i], sizeof(u64));
+    mem[i] = (i + 1) * 10;
+  }
+
+  for(u64 i = 0; i < 3; i++)
+  {
+    printf("%lld\n", mem[i]);
+  }
+
+  free_memory(mem);
+
+  if(dse_has_freed_memory(mem))
+  {
+    puts("Memory freed!");
+  }
+  else
+  {
+    puts("Memory not freed! :(");
+  }
 
   return 0;
 }

@@ -79,7 +79,7 @@ Arena* dse_create_arena(dse_u64 capacity)
 
 void dse_destroy_arena(Arena *arena)
 {
-  Arena* current_arena = arena;
+  Arena *current_arena = arena;
 
   for(; current_arena->previous != null;)
   {
@@ -89,7 +89,7 @@ void dse_destroy_arena(Arena *arena)
     VirtualFree(current_arena->freelist, 0, MEM_RELEASE);
     __internal_is_freed(current_arena->freelist);
 
-    Arena* temp = current_arena;
+    Arena *temp = current_arena;
     current_arena = current_arena->previous;
 
     VirtualFree(temp, 0, MEM_RELEASE);

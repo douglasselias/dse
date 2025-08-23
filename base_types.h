@@ -22,4 +22,8 @@ typedef unsigned long long u64;
   typedef struct name name; \
   struct name               \
 
+#define Enum(name)        \
+  typedef enum name name; \
+  enum name               \
+
 #endif // BASE_TYPES_H
