@@ -38,9 +38,14 @@ void dse_print_array(DSE_Array array);
 
 DSE_Array dse_create_array(dse_u64 capacity)
 {
+  dse_u64 MAX_CAPACITY = 0x80000000ULL; // 2GB
+
+  if(capacity < 1)            capacity = 1;
+  if(capacity > MAX_CAPACITY) capacity = MAX_CAPACITY;
+
   DSE_Array array = {0};
-  array.capacity = capacity;
-  array.data     = (dse_u8*)DSE_MEM_ALLOC(sizeof(dse_u8) * capacity);
+  array.capacity  = capacity;
+  array.data      = (dse_u8*)DSE_MEM_ALLOC(sizeof(dse_u8) * capacity);
   return array;
 }
 
@@ -92,6 +97,45 @@ void dse_print_array(DSE_Array array)
 
   printf("]\n");
 }
+
+#define DSE_CREATE_CUSTOM_ARRAY_TYPE_FUNCTIONS(type, name)      \
+void array_append_##name(DSE_Array *array, type value)          \
+{                                                               \
+  dse_u64 size = sizeof(type);                                  \
+  dse_u8 *memory = (dse_u8*)&value;                             \
+                                                                \
+  for(dse_u64 i = 0; i < size; i++)                             \
+  {                                                             \
+    dse_array_append(array, memory[i]);                         \
+  }                                                             \
+}                                                               \
+                                                                \
+type* array_get_by_index_##name(DSE_Array array, dse_u64 index) \
+{                                                               \
+  dse_u64 element_size = sizeof(type);                          \
+  dse_u8 *cursor = array.data;                                  \
+  cursor += index * element_size;                               \
+  return (type*)cursor;                                         \
+}                                                               \
+                                                                \
+void dse_print_array_##name(DSE_Array array)                    \
+{                                                               \
+  dse_u64 element_size = sizeof(type);                          \
+  dse_u64 array_size = array.size / element_size;               \
+  type *cursor = (type*)array.data;                             \
+                                                                \
+  printf("[");                                                  \
+                                                                \
+  for(dse_u64 i = 0; i < array_size; i++)                       \
+  {                                                             \
+    print_##name(cursor);                                       \
+    char final_char = i < array.size - 1 ? ' ' : '\0';          \
+    printf("%c", final_char);                                   \
+    cursor++;                                                   \
+  }                                                             \
+                                                                \
+  printf("\n]\n");                                              \
+}                                                               \
 
 #endif // DSE_ARRAY_IMPLEMENTATION
 #endif // DSE_ARRAY_H

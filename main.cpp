@@ -27,6 +27,22 @@
     puts("\033[36mALL TESTS PASSED\033[0m"); \
   }                                          \
 
+
+typedef struct User User;
+struct User
+{
+  char username[20];
+  char email[20];
+};
+
+void print_user(User *u)
+{
+  User user = *u;
+  printf("\n  Username: %*s  | Email: %*s", 20, user.username, 20, user.email);
+}
+
+DSE_CREATE_CUSTOM_ARRAY_TYPE_FUNCTIONS(User, user);
+
 int main()
 {
   DSE_INIT_TESTS();
@@ -649,19 +665,20 @@ int main()
   { // Remove by index test
     DSE_Array array = dse_create_array(1);
 
-    dse_u8 first_target = 10, second_target = 20, third_target = 30;
+    dse_u8 first_target = 10, second_target = 20, third_target = 30, fourth_target = 40;
     dse_array_append(&array, first_target);
     dse_array_append(&array, second_target);
     dse_array_append(&array, third_target);
+    dse_array_append(&array, fourth_target);
 
     dse_print_array(array);
     dse_array_remove_by_index(&array, 1);
     dse_print_array(array);
 
-    ASSERTION(array.data[0] == first_target,  "data[0] is not %d, but got %d", first_target, array.data[0]);
-    ASSERTION(array.data[1] == third_target, "data[1] is not %d, but got %d", third_target, array.data[1]);
-    ASSERTION(array.capacity == 4, "Capacity is not %d, but got %lld", 4, array.capacity);
-    ASSERTION(array.size == 2, "Size is not %d, but got %lld", 2, array.size);
+    ASSERTION(array.data[0] == first_target,  "data[0] is not %d, but got %d\n", first_target, array.data[0]);
+    ASSERTION(array.data[1] == third_target, "data[1] is not %d, but got %d\n", third_target, array.data[1]);
+    ASSERTION(array.capacity == 4, "Capacity is not %d, but got %lld\n", 4, array.capacity);
+    ASSERTION(array.size == 3, "Size is not %d, but got %lld\n", 3, array.size);
   }
 
   { // Reset array test
@@ -681,6 +698,33 @@ int main()
     ASSERTION(array.data[1] == second_target, "data[1] is not %d, but got %d", second_target, array.data[1]);
     ASSERTION(array.capacity == 2, "Capacity is not %d, but got %lld", 2, array.capacity);
     ASSERTION(array.size == 1, "Size is not %d, but got %lld", 1, array.size);
+  }
+
+  { // Custom array type
+    DSE_Array array = dse_create_array((dse_u64)-1);
+
+    #define USERNAME "doug"
+    #define EMAIL    "doug@email.com"
+
+    array_append_user(&array, {USERNAME, EMAIL});
+    array_append_user(&array, {"elias", "elias@email.com"});
+
+    User *result = array_get_by_index_user(array, 0);
+
+    ASSERTION(strcmp(USERNAME, result->username) == 0, "Username is not %s, but got %s", USERNAME, result->username);
+    ASSERTION(strcmp(EMAIL, result->email) == 0, "Email is not %s, but got %s", EMAIL, result->email);
+
+    User *result1 = array_get_by_index_user(array, 1);
+
+    char username[20] = "elias";
+    char email[20] = "elias@email.com";
+    ASSERTION(strcmp(username, result1->username) == 0, "Username is not %s, but got %s", username, result1->username);
+    ASSERTION(strcmp(email, result1->email) == 0, "Email is not %s, but got %s", email, result1->email);
+
+    #undef USERNAME
+    #undef EMAIL
+
+    dse_print_array_user(array);
   }
 
   DSE_PRINT_ALL_TESTS_PASSED();
