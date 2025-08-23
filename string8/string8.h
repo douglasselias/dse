@@ -19,7 +19,7 @@ typedef unsigned long long dse_u64;
 /// TODO: Need prefix
 typedef struct
 {
-  char* text;
+  char*   text;
   dse_u64 size;
 } String8;
 

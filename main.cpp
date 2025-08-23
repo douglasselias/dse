@@ -51,6 +51,38 @@ void print_u64(dse_u64 *number)
 
 DSE_CREATE_CUSTOM_ARRAY_TYPE_FUNCTIONS(dse_u64, u64);
 
+void print_char(char *c)
+{
+  printf("  %c\n", *c);
+}
+
+DSE_CREATE_CUSTOM_ARRAY_TYPE_FUNCTIONS(char, char);
+
+void print_string(DSE_Array array)
+{
+  for(dse_u64 i = 0; i < array.size; i++)
+  {
+    printf("%c", array.data[i]);
+  }
+}
+
+typedef DSE_Array String;
+
+#define STR(string) { __dse_string_size(string), __dse_string_size(string), (dse_u8*)string }
+
+String create_string(char *string)
+{
+  String result = dse_create_array(0);
+
+  while(*string)
+  {
+    array_append_char(&result, *string);
+    string++;
+  }
+
+  return result;
+}
+
 void dse_print_array(DSE_Array array)
 {
   printf("[");
@@ -762,6 +794,26 @@ int main()
     ASSERTION(*number == number_2, "Number is not %lld, but got %lld\n", number_2, *number);
 
     dse_print_array_u64(array);
+  }
+
+  {
+    DSE_Array array = dse_create_array(3);
+
+    char c2 = 'B';
+
+    // array_append_char(&array, (char)'A');
+    // array_append_char(&array, (char)c2);
+    // array_append_char(&array, (char)'C');
+
+    // String string = create_string("ABC");
+    String string = STR("ABC");
+
+    char *c = array_get_by_index_char(string, 1);
+
+    ASSERTION(*c == c2, "Char is not %c, but got %c\n", c2, *c);
+
+    dse_print_array_char(string);
+    print_string(string);
   }
 
   DSE_PRINT_ALL_TESTS_PASSED();
