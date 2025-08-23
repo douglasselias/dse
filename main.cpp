@@ -28,20 +28,34 @@
   }                                          \
 
 
+#define MAX_STR_SIZE 20
 typedef struct User User;
 struct User
 {
-  char username[20];
-  char email[20];
+  char username[MAX_STR_SIZE];
+  char email[MAX_STR_SIZE];
 };
 
 void print_user(User *u)
 {
   User user = *u;
-  printf("\n  Username: %*s  | Email: %*s", 20, user.username, 20, user.email);
+  printf("  Username: %*s  | Email: %*s\n", MAX_STR_SIZE, user.username, MAX_STR_SIZE, user.email);
 }
 
 DSE_CREATE_CUSTOM_ARRAY_TYPE_FUNCTIONS(User, user);
+
+void dse_print_array(DSE_Array array)
+{
+  printf("[");
+
+  for(dse_u64 i = 0; i < array.size; i++)
+  {
+    char final_char = i < array.size - 1 ? ',' : '\0';
+    printf("%d%c", array.data[i], final_char);
+  }
+
+  printf("]\n");
+}
 
 int main()
 {

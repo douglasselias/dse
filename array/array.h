@@ -85,19 +85,6 @@ void dse_array_remove_by_index(DSE_Array *array, dse_u64 index)
   array->size--;
 }
 
-void dse_print_array(DSE_Array array)
-{
-  printf("[");
-
-  for(dse_u64 i = 0; i < array.size; i++)
-  {
-    char final_char = i < array.size - 1 ? ',' : '\0';
-    printf("%d%c", array.data[i], final_char);
-  }
-
-  printf("]\n");
-}
-
 #define DSE_CREATE_CUSTOM_ARRAY_TYPE_FUNCTIONS(type, name)      \
 void array_append_##name(DSE_Array *array, type value)          \
 {                                                               \
@@ -124,17 +111,15 @@ void dse_print_array_##name(DSE_Array array)                    \
   dse_u64 array_size = array.size / element_size;               \
   type *cursor = (type*)array.data;                             \
                                                                 \
-  printf("[");                                                  \
+  printf("\n[\n");                                              \
                                                                 \
   for(dse_u64 i = 0; i < array_size; i++)                       \
   {                                                             \
     print_##name(cursor);                                       \
-    char final_char = i < array.size - 1 ? ' ' : '\0';          \
-    printf("%c", final_char);                                   \
     cursor++;                                                   \
   }                                                             \
                                                                 \
-  printf("\n]\n");                                              \
+  printf("]\n");                                                \
 }                                                               \
 
 #endif // DSE_ARRAY_IMPLEMENTATION
