@@ -17,6 +17,7 @@ int main()
   }
 
   pop_arena(&arena, sizeof(u64));
+  pop_arena(&arena, sizeof(u64) * 2);
 
   for(s64 i = 0; i < (s64)(arena->used/sizeof(s64)); i++)
   {

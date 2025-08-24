@@ -150,18 +150,6 @@ void dse_list_files_from_dir(char *path)
   depth--;
 }
 
-// typedef enum
-// {
-//   RESERVE_MEMORY,
-//   COMMIT_MEMORY,
-// } AllocType;
-
-// Enum(DSE_AllocType)
-// {
-//   RESERVE_MEMORY = 0x00002000,
-//   COMMIT_MEMORY  = 0x00001000,
-// };
-
 void* dse_alloc(u64 capacity, DSE_AllocType allocation_type)
 {
   // TODO: Docs recommend to use both reserve and commit for allocation. But it seems to work fine if its called with just commit.
@@ -185,6 +173,8 @@ bool dse_has_freed_memory(void *memory)
   return memory_info.State == MEM_FREE;
 }
 
+#endif // DSE_OS_IMPLEMENTATION
+
 #ifdef DSE_OS_STRIP_PREFIX
   #define generate_random_number dse_generate_random_number
   #define count_threads          dse_count_threads
@@ -204,7 +194,6 @@ bool dse_has_freed_memory(void *memory)
   #define has_freed_memory       dse_has_freed_memory
 #endif // DSE_OS_STRIP_PREFIX
 
-#endif // DSE_OS_IMPLEMENTATION
 #endif // DSE_OS_H
 
 /*

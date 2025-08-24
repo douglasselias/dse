@@ -2,9 +2,11 @@
 #define DSE_ARENA_H
 
 #include "../base_types.h"
+
+#define DSE_OS_IMPLEMENTATION
 #include "../os/os.h"
 
-#include <windows.h>
+#include <string.h>
 
 Struct(DSE_Arena)
 {
@@ -18,32 +20,30 @@ Struct(DSE_Arena)
 };
 
 DSE_Arena* dse_create_arena (u64 capacity);
-void   dse_destroy_arena(DSE_Arena *arena);
+void       dse_destroy_arena(DSE_Arena *arena);
 
 void* dse_push_arena(DSE_Arena **arena, u64 size);
 void  dse_pop_arena (DSE_Arena **arena, u64 size);
 
 #ifdef DSE_ARENA_IMPLEMENTATION
 
-#define __internal_is_freed(buffer)                                   \
+#define __internal_is_freed(memory)                                   \
   do                                                                  \
   {                                                                   \
-    u64 line = __LINE__;                                          \
-    MEMORY_BASIC_INFORMATION memory_info;                             \
-    VirtualQuery(buffer, &memory_info, sizeof(memory_info));          \
-    if(memory_info.State != MEM_FREE)                                 \
+    u64 line = __LINE__;                                              \
+    if(!dse_has_freed_memory(memory))                                 \
     {                                                                 \
-      printf("Memory not freed (%s) at line: %lld\n", #buffer, line); \
+      printf("Memory not freed (%s) at line: %lld\n", #memory, line); \
     }                                                                 \
   } while(0)                                                          \
 
 DSE_Arena* dse_create_arena(u64 capacity)
 {
-  DSE_Arena *arena = (DSE_Arena*)VirtualAlloc(null, sizeof(DSE_Arena), MEM_COMMIT, PAGE_READWRITE);
+  DSE_Arena *arena = (DSE_Arena*)dse_alloc(sizeof(DSE_Arena), COMMIT_MEMORY);
 
   arena->capacity = capacity;
-  arena->data     = (u8*) VirtualAlloc(null, capacity,                   MEM_RESERVE, PAGE_READWRITE);
-  arena->freelist = (s64*)VirtualAlloc(null, capacity * sizeof(s64), MEM_COMMIT,  PAGE_READWRITE);
+  arena->data     = (u8*) dse_alloc(capacity, RESERVE_MEMORY);
+  arena->freelist = (s64*)dse_alloc(capacity * sizeof(s64), COMMIT_MEMORY);
 
   memset(arena->freelist, -1, capacity);
 
@@ -56,23 +56,23 @@ void dse_destroy_arena(DSE_Arena *arena)
 
   for(; current_arena->previous != null;)
   {
-    VirtualFree(current_arena->data,     0, MEM_RELEASE);
+    dse_free_memory(current_arena->data);
     __internal_is_freed(current_arena->data);
 
-    VirtualFree(current_arena->freelist, 0, MEM_RELEASE);
+    dse_free_memory(current_arena->freelist);
     __internal_is_freed(current_arena->freelist);
 
     DSE_Arena *temp = current_arena;
     current_arena = current_arena->previous;
 
-    VirtualFree(temp, 0, MEM_RELEASE);
+    dse_free_memory(temp);
     __internal_is_freed(temp);
   }
 
-  VirtualFree(current_arena->data, 0, MEM_RELEASE);
+  dse_free_memory(current_arena->data);
   __internal_is_freed(current_arena->data);
 
-  VirtualFree(current_arena,       0, MEM_RELEASE);
+  dse_free_memory(current_arena);
   __internal_is_freed(current_arena);
 }
 
@@ -82,7 +82,7 @@ void* dse_push_arena(DSE_Arena **arena, u64 size)
 
   if(new_capacity <= (*arena)->capacity)
   {
-    VirtualAlloc((*arena)->data, size, MEM_COMMIT, PAGE_READWRITE);
+    dse_commit_memory((*arena)->data, size);
     void *block = (*arena)->data + (*arena)->used;
     (*arena)->used += size;
     return block;
@@ -134,9 +134,9 @@ void dse_pop_from_index(DSE_Arena *arena, u64 index)
   arena->freelist[arena->freelist_index++] = index;
 }
 
-// TODO: Should be outside of implementation.
+#endif // DSE_ARENA_IMPLEMENTATION
+
 #ifdef DSE_ARENA_STRIP_PREFIX
-  // TODO: Should be typedef or #define?
   #define Arena         DSE_Arena
   #define create_arena  dse_create_arena
   #define destroy_arena dse_destroy_arena
@@ -144,7 +144,6 @@ void dse_pop_from_index(DSE_Arena *arena, u64 index)
   #define pop_arena     dse_pop_arena
 #endif // DSE_ARENA_STRIP_PREFIX
 
-#endif // DSE_ARENA_IMPLEMENTATION
 #endif // DSE_ARENA_H
 
 /*

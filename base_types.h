@@ -1,22 +1,15 @@
 #ifndef BASE_TYPES_H
 #define BASE_TYPES_H
 
-#ifndef __cplusplus
-  #define bool  _Bool
-  #define false 0
-  #define true  1
-#endif
+#include <stdbool.h>
+#include <stdint.h>
 
-typedef   signed long long s64;
-typedef unsigned char      u8;
-typedef unsigned int       u32;
-typedef unsigned long long u64;
+#define null NULL
 
-#ifdef __cplusplus
-  #define null 0
-#else
-  #define null ((void*)0)
-#endif
+typedef  int64_t s64;
+typedef  uint8_t  u8;
+typedef uint32_t u32;
+typedef uint64_t u64;
 
 #define Struct(name)        \
   typedef struct name name; \
