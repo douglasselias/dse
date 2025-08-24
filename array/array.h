@@ -1,51 +1,53 @@
 #ifndef DSE_ARRAY_H
 #define DSE_ARRAY_H
 
-typedef   signed long long dse_s64;
-typedef unsigned char      dse_u8;
-typedef unsigned long long dse_u64;
+#include "../base_types.h"
+
+#define DSE_OS_IMPLEMENTATION
+#include "../os/os.h"
+
+#define DSE_ARENA_IMPLEMENTATION
+// TODO: Strip prefix?
+#include "../arena/arena.h"
 
 #ifndef DSE_MEM_ALLOC
-  #include <stdlib.h>
-  #define DSE_MEM_ALLOC(total_bytes) malloc(total_bytes)
+  #define DSE_MEM_ALLOC(total_bytes) dse_mem_alloc(total_bytes)
 #endif
 
 #ifndef DSE_MEM_FREE
-  #include <stdlib.h>
-  #define DSE_MEM_FREE(pointer) free(pointer)
+  #define DSE_MEM_FREE(memory) dse_free_memory(memory)
 #endif
 
 #ifndef DSE_MEM_REALLOC
-  #include <stdlib.h>
-  #define DSE_MEM_REALLOC(pointer, total_bytes) realloc(pointer, total_bytes)
+  #define DSE_MEM_REALLOC(memory, total_bytes) dse_mem_realloc(memory, total_bytes)
 #endif
 
-typedef struct
+Struct(DSE_Array)
 {
-  dse_u64 size;
-  dse_u64 capacity;
-  dse_u8 *data;
-} DSE_Array;
+  u64 size;
+  u64 capacity;
+  u8 *data;
+};
 
-DSE_Array dse_create_array(dse_u64 capacity);
+DSE_Array dse_create_array(u64 capacity);
 void dse_destroy_array(DSE_Array *array);
 void dse_reset_array(DSE_Array *array);
-void dse_array_append(DSE_Array *array, dse_u8 value);
-void dse_array_remove_by_index(DSE_Array *array, dse_u64 index);
-void dse_print_array(DSE_Array array);
+void dse_array_append(DSE_Array *array, u8 value);
+void dse_array_remove_by_index(DSE_Array *array, u64 index);
+// void dse_print_array(DSE_Array array);
 
 #ifdef DSE_ARRAY_IMPLEMENTATION
 
-DSE_Array dse_create_array(dse_u64 capacity)
+DSE_Array dse_create_array(u64 capacity)
 {
-  dse_u64 MAX_CAPACITY = 0x80000000ULL; // 2GB
+  u64 MAX_CAPACITY = 0x80000000ULL; // 2GB
 
   if(capacity < 1)            capacity = 1;
   if(capacity > MAX_CAPACITY) capacity = MAX_CAPACITY;
 
   DSE_Array array = {0};
   array.capacity  = capacity;
-  array.data      = (dse_u8*)DSE_MEM_ALLOC(sizeof(dse_u8) * capacity);
+  array.data      = (u8*)DSE_MEM_ALLOC(sizeof(u8) * capacity);
   return array;
 }
 
@@ -60,7 +62,7 @@ void dse_reset_array(DSE_Array *array)
   array->size = 0;
 }
 
-void dse_array_append(DSE_Array *array, dse_u8 value)
+void dse_array_append(DSE_Array *array, u8 value)
 {
   if (array->size + 1 <= array->capacity)
   {
@@ -69,60 +71,71 @@ void dse_array_append(DSE_Array *array, dse_u8 value)
   else
   {
     array->capacity *= 2;
-    array->data = (dse_u8*)DSE_MEM_REALLOC(array->data, sizeof(dse_u8) * array->capacity);
+    array->data = (u8*)DSE_MEM_REALLOC(array->data, sizeof(u8) * array->capacity);
     array->data[array->size] = value;
   }
 
   array->size++;
 }
 
-void dse_array_remove_by_index(DSE_Array *array, dse_u64 index)
+void dse_array_remove_by_index(DSE_Array *array, u64 index)
 {
-  dse_u64 on_the_right = array->size - index - 1;
-  dse_u8 *dest = array->data + index;
-  dse_u8 *src  = array->data + index + 1;
-  memcpy(dest, src, sizeof(dse_u8) * on_the_right);
+  u64 on_the_right = array->size - index - 1;
+  u8 *dest = array->data + index;
+  u8 *src  = array->data + index + 1;
+  memcpy(dest, src, sizeof(u8) * on_the_right);
   array->size--;
 }
 
-#define DSE_CREATE_CUSTOM_ARRAY_TYPE_FUNCTIONS(type, name)      \
-void array_append_##name(DSE_Array *array, type value)          \
-{                                                               \
-  dse_u64 size = sizeof(type);                                  \
-  dse_u8 *memory = (dse_u8*)&value;                             \
-                                                                \
-  for(dse_u64 i = 0; i < size; i++)                             \
-  {                                                             \
-    dse_array_append(array, memory[i]);                         \
-  }                                                             \
-}                                                               \
-                                                                \
-type* array_get_by_index_##name(DSE_Array array, dse_u64 index) \
-{                                                               \
-  dse_u64 element_size = sizeof(type);                          \
-  dse_u8 *cursor = array.data;                                  \
-  cursor += index * element_size;                               \
-  return (type*)cursor;                                         \
-}                                                               \
-                                                                \
-void dse_print_array_##name(DSE_Array array)                    \
-{                                                               \
-  dse_u64 element_size = sizeof(type);                          \
-  dse_u64 array_size = array.size / element_size;               \
-  type *cursor = (type*)array.data;                             \
-                                                                \
-  printf("\n[\n");                                              \
-                                                                \
-  for(dse_u64 i = 0; i < array_size; i++)                       \
-  {                                                             \
-    print_##name(cursor);                                       \
-    cursor++;                                                   \
-  }                                                             \
-                                                                \
-  printf("]\n");                                                \
-}                                                               \
+#define DSE_CREATE_CUSTOM_ARRAY_TYPE_FUNCTIONS(type, name)  \
+void array_append_##name(DSE_Array *array, type value)      \
+{                                                           \
+  u64 size = sizeof(type);                                  \
+  u8 *memory = (u8*)&value;                                 \
+                                                            \
+  for(u64 i = 0; i < size; i++)                             \
+  {                                                         \
+    dse_array_append(array, memory[i]);                     \
+  }                                                         \
+}                                                           \
+                                                            \
+type* array_get_by_index_##name(DSE_Array array, u64 index) \
+{                                                           \
+  u64 element_size = sizeof(type);                          \
+  u8 *cursor = array.data;                                  \
+  cursor += index * element_size;                           \
+  return (type*)cursor;                                     \
+}                                                           \
+                                                            \
+void dse_print_array_##name(DSE_Array array)                \
+{                                                           \
+  u64 element_size = sizeof(type);                          \
+  u64 array_size = array.size / element_size;               \
+  type *cursor = (type*)array.data;                         \
+                                                            \
+  printf("\n[\n");                                          \
+                                                            \
+  for(u64 i = 0; i < array_size; i++)                       \
+  {                                                         \
+    print_##name(cursor);                                   \
+    cursor++;                                               \
+  }                                                         \
+                                                            \
+  printf("]\n");                                            \
+}                                                           \
 
 #endif // DSE_ARRAY_IMPLEMENTATION
+
+#ifdef DSE_ARRAY_STRIP_PREFIX
+  #define Array                 DSE_Array
+  #define create_array          dse_create_array
+  #define destroy_array         dse_destroy_array
+  #define reset_array           dse_reset_array
+  #define array_append          dse_array_append
+  #define array_remove_by_index dse_array_remove_by_index
+  // #define print_array           dse_print_array
+#endif // DSE_ARRAY_STRIP_PREFIX
+
 #endif // DSE_ARRAY_H
 
 /*

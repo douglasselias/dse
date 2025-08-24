@@ -3,6 +3,8 @@
 
 #include "../base_types.h"
 
+#include <stdio.h>
+
 #define INFINITE_TIMEOUT 0xFFFFFFFF
 
 #define dse_thread_handle void*
@@ -24,6 +26,8 @@ u64 dse_get_cpu_timer();
 void dse_list_files_from_dir(char *path);
 void* dse_alloc(u64 capacity, DSE_AllocType allocation_type);
 void dse_commit_memory(void *memory, u64 capacity);
+void* dse_mem_alloc(u64 capacity);
+void* dse_mem_realloc(void *old_memory, u64 new_capacity);
 void dse_free_memory(void *memory);
 bool dse_has_freed_memory(void *memory);
 
@@ -156,9 +160,39 @@ void* dse_alloc(u64 capacity, DSE_AllocType allocation_type)
   return VirtualAlloc(null, capacity, allocation_type, PAGE_READWRITE);
 }
 
+void* dse_mem_alloc(u64 capacity)
+{
+  // TODO: Docs recommend to use both reserve and commit for allocation. But it seems to work fine if its called with just commit.
+  return VirtualAlloc(null, capacity, COMMIT_MEMORY, PAGE_READWRITE);
+}
+
 void dse_commit_memory(void *memory, u64 capacity)
 {
   VirtualAlloc(memory, capacity, COMMIT_MEMORY, PAGE_READWRITE);
+}
+
+void* dse_mem_realloc(void *old_memory, u64 new_capacity)
+{
+  // NOTE: Assuming that new_capacity is greater than older capacity.
+  void *new_memory = dse_mem_alloc(new_capacity);
+
+  u64 old_size = 0;
+
+  MEMORY_BASIC_INFORMATION mbi;
+  if(VirtualQuery(old_memory, &mbi, sizeof(mbi)))
+  {
+    old_size = mbi.RegionSize;
+  }
+  else
+  {
+    puts("Failed to query memory info.");
+  }
+
+  memcpy(new_memory, old_memory, old_size);
+
+  dse_free_memory(old_memory);
+
+  return new_memory;
 }
 
 void dse_free_memory(void *memory)
@@ -189,7 +223,9 @@ bool dse_has_freed_memory(void *memory)
   #define get_cpu_timer          dse_get_cpu_timer
   #define list_files_from_dir    dse_list_files_from_dir
   #define alloc                  dse_alloc
+  #define mem_alloc              dse_mem_alloc
   #define commit_memory          dse_commit_memory
+  #define mem_realloc            dse_mem_realloc
   #define free_memory            dse_free_memory
   #define has_freed_memory       dse_has_freed_memory
 #endif // DSE_OS_STRIP_PREFIX

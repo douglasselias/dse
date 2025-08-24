@@ -14,9 +14,13 @@ Struct(DSE_Arena)
   DSE_Arena *next;
   s64 *freelist;
   s64 freelist_index;
-  s64 used;
-  s64 capacity;
+  s64 used;     // In bytes
+  s64 capacity; // In bytes
   u8 *data;
+
+  // TODO:
+  // u64 stride;     ?
+  // s64 bytes_used; ?
 };
 
 DSE_Arena* dse_create_arena (u64 capacity);
