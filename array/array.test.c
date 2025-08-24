@@ -17,6 +17,18 @@ void print_user(User user)
 
 DSE_CREATE_CUSTOM_ARRAY_TYPE_FUNCTIONS(, user, User)
 
+void print_array_user(Array_user array)
+{
+  printf("\n[\n");
+
+  for(u32 i = 0; i < array.size; i++)
+  {
+    print_user(array.data[i]);
+  }
+
+  printf("]\n");
+}
+
 int main()
 {
   // Array array = create_array(3);
@@ -28,7 +40,7 @@ int main()
 
   // destroy_array(&array);
 
-  Array_user users = create_array_user(2);
+  Array_user users = create_array_user((u32)-1);
 
   // User user_one   = {"one",   "one@email.com"};
   // User user_two   = {"two",   "two@email.com"};
@@ -46,8 +58,11 @@ int main()
   
   print_array_user(users);
 
-  reset_array_user(&users);
-  printf("Size after reset: %lld\n", users.size);
+  // reset_array_user(&users);
+  users.size = 0;
+  printf("Size after reset: %d\n", users.size);
+  print_array_user(users);
+
   destroy_array_user(&users);
   printf("Destroyed? %s\n", users.data == null ? "Yes" : "No");
   // printf("Name: %s\n", users.data[0].name);
