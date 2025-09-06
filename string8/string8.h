@@ -12,7 +12,6 @@
   #define DSE_MEM_ALLOC(total_bytes) dse_mem_alloc(total_bytes)
 #endif
 
-/// TODO: Need prefix
 Struct(DSE_String8)
 {
   char *text;
@@ -24,7 +23,7 @@ Struct(DSE_String8)
 
 u64 __dse_string_size(char *string);
 
-#define DSE_STR8(string) { string, __dse_string_size(string) }
+#define DSE_STR8(string) (DSE_String8){ string, __dse_string_size(string) }
 
 bool dse_strings_are_equal(DSE_String8 a, DSE_String8 b);
 
@@ -71,7 +70,8 @@ DSE_String8 dse_trim_left (DSE_String8 s);
 DSE_String8 dse_trim_right(DSE_String8 s);
 DSE_String8 dse_trim      (DSE_String8 s);
 
-/// TODO: starts_with, ends_with
+bool dse_starts_with(DSE_String8 string, DSE_String8 target);
+bool dse_ends_with  (DSE_String8 string, DSE_String8 target);
 
 s64 dse_index_of(DSE_String8 string, char search);
 s64 dse_index_of_from(DSE_String8 string, char search, u64 from_index);
@@ -79,11 +79,11 @@ s64 dse_last_index_of(DSE_String8 string, char search, u64 from_index);
 
 bool simple_fuzzy_match(DSE_String8 string, DSE_String8 pattern);
 
-/// TODO: Search functions that are able to use string view instead of allocating memory. 
+// TODO: Search functions that are able to use string view instead of allocating memory. 
 DSE_String8 dse_string_view(DSE_String8 string, u64 start_index, u64 end_index);
 DSE_String8 dse_string_view_size(DSE_String8 string, u64 start_index, u64 size);
 
-/// TODO: Implement
+// TODO: Implement
 char* dse_to_c_string(DSE_String8 s);
 DSE_String8 dse_c_string_to_string8(char *s);
 /// ___
@@ -589,6 +589,120 @@ DSE_String8 dse_trim(DSE_String8 string)
   }
 
   return dse_slice_string(string, start, end);
+}
+
+bool dse_starts_with(DSE_String8 string, DSE_String8 target)
+{
+  for(u64 i = 0; i < target.size; i++)
+  {
+    if(target.text[i] != string.text[i])
+    {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool dse_ends_with(DSE_String8 string, DSE_String8 target) 
+{
+  if(target.size > string.size) return false;
+
+  for(u64 i = 0; i < target.size; i++)
+  {
+    u64 j = string.size - target.size + i;
+    if(target.text[i] != string.text[j])
+    {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+char* __parse_number(u64 number)
+{
+  #define MAX_CHARS 20
+  char *buffer = DSE_MEM_ALLOC(MAX_CHARS + 1); // One for null terminator
+  u8 buffer_index = MAX_CHARS;
+
+  while(number != 0)
+  {
+    char rem = number % 10;
+    number -= rem;
+    number /= 10;
+
+    buffer[buffer_index--] = rem + '0';
+  }
+
+  char *start_buffer = buffer + buffer_index + 1; // +1 to undo the last --
+  return start_buffer;
+}
+
+// TODO: Maybe implement a version that uses char* for the format string.
+void pf(DSE_String8 format_string, ...)
+{
+  va_list args;
+
+  va_start(args, format_string);
+
+  for(u64 i = 0; i < format_string.size; i++)
+  {
+    char c = format_string.text[i];
+    if(c == '%')
+    {
+      i++;
+      c = format_string.text[i];
+
+      switch(c)
+      {
+        case 'b':
+        {
+          u8 boolean = va_arg(args, u8);
+          printf(boolean ? "true" : "false");
+        }
+        break;
+        case 'd':
+        {
+          u64 number = va_arg(args, u64);
+          printf(__parse_number(number));
+        }
+        break;
+        case 'f':
+        {
+          f64 number = va_arg(args, f64);
+          u64 integer_part = number;
+          char* num = __parse_number(integer_part);
+
+          printf("%s.", num);
+
+          f64 float_part = number - integer_part;
+
+          // TODO: Maybe let the user define how many digits to display
+          for(u8 k = 0; k < 4; k++)
+          {
+            float_part *= 10;
+            u8 truncated = float_part;
+            putchar(truncated + '0');
+            float_part -= truncated;
+          }
+        }
+        break;
+        case 's':
+        {
+          DSE_String8 string = va_arg(args, DSE_String8);
+          printf("%s", string.text);
+        }
+        break;
+      }
+    }
+    else
+    {
+      putchar(c);
+    }
+  }
+
+  va_end(args);
 }
 
 DSE_String8 dse_string_replace_char(DSE_String8 input, char target, char replacement)
