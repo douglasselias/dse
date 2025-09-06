@@ -9,6 +9,7 @@ mkdir build
 @REM set main_file=array\array.test.c
 @REM set main_file=arena\arena.test.c
 set main_file=string8\string8.test.c
+@REM set main_file=main.cpp
 
 cl %main_file% /nologo /W4 /WX /Z7 /fsanitize=address /wd4189 /wd4244 /wd4505 /wd4101 /wd4996 /wd4100 /wd4057 /wd4133 /Fo.\build\ %filename% /link /stack:0x400000,0x400000 /out:build\main.exe
 
