@@ -1,29 +1,28 @@
 #define DSE_ARENA_IMPLEMENTATION
 #define DSE_ARENA_STRIP_PREFIX
-#include "../arena/arena.h"
+#include "arena.h"
 
 #define DSE_OS_IMPLEMENTATION
 #include "../os/os.h"
 
+#define DSE_ARENA_ALLOC_COMMIT(size)          dse_alloc(size, COMMIT_MEMORY)
+#define DSE_ARENA_ALLOC_RESERVE(size)         dse_alloc(size, RESERVE_MEMORY)
+#define DSE_ARENA_FREE_MEMORY(memory)         dse_free_memory(memory)
+#define DSE_ARENA_MEMSET(memory, value, size) dse_mem_set(memory, value, size)
 
-// #ifndef DSE_ARENA_ALLOC_COMMIT
-//   #define DSE_OS_IMPLEMENTATION
-//   #include "../os/os.h"
+#include <stdio.h>
 
-//   #define DSE_ARENA_ALLOC_COMMIT(size)  dse_alloc(size, COMMIT_MEMORY)
-//   #define DSE_ARENA_ALLOC_RESERVE(size) dse_alloc(size, RESERVE_MEMORY)
-//   #define DSE_ARENA_FREE_MEMORY(memory) dse_free_memory(memory)
-// #endif
-
-Struct(User)
+typedef struct Entity Entity;
+struct Entity
 {
+  u64 id;
   char *name;
-  char *email;
+  u64 x, y;
 };
 
-Arena* arena_create_user(u64 size)
+Arena* arena_create_entity(u64 size)
 {
-  Arena *arena = create_arena(sizeof(User) * size);
+  Arena *arena = create_arena(sizeof(Entity) * size);
   return arena;
 }
 
@@ -91,9 +90,29 @@ void print_users(Arena *arena)
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
 
-int main()
+s32 arena_tests()
 {
-  User users[] =
+  // Arena *arena = create_arena(10);
+
+  // u64 mem_size = 8;
+  // u64 *mem = push_arena(&arena, sizeof(u64) * mem_size);
+
+  // for(u64 i = 0; i < mem_size; i++)
+  // {
+  //   mem[i] = (i + 1) * 10;
+  // }
+
+  // pop_arena(&arena, sizeof(u64));
+  // pop_arena(&arena, sizeof(u64) * 2);
+
+  // for(s64 i = 0; i < (s64)(arena->used/sizeof(s64)); i++)
+  // {
+  //   printf("%lld\n", mem[i]);
+  // }
+
+  // destroy_arena(arena);
+
+   User users[] =
   {
     {"uno ",   "one@email.com"},
     {"dos ",   "two@email.com"},

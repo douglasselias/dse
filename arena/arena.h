@@ -1,14 +1,43 @@
 #ifndef DSE_ARENA_H
 #define DSE_ARENA_H
 
-#include "../base_types.h"
+#include <stdbool.h>
+#include <stdint.h>
 
-#define DSE_OS_IMPLEMENTATION
-#include "../os/os.h"
+typedef  uint8_t  s8;
+typedef  int64_t s64;
+typedef  uint8_t  u8;
+typedef uint64_t u64;
 
-#include <string.h>
+#define null NULL
 
-Struct(DSE_Arena)
+#ifndef DSE_ARENA_ALLOC_COMMIT
+  #include <stdlib.h>
+  #define DSE_ARENA_ALLOC_COMMIT(size)  calloc(1, size)
+#endif
+
+#ifndef DSE_ARENA_ALLOC_RESERVE
+  #include <stdlib.h>
+  #define DSE_ARENA_ALLOC_RESERVE(size) calloc(1, size)
+#endif
+
+#ifndef DSE_ARENA_COMMIT_MEM
+  #include <stdlib.h>
+  #define DSE_ARENA_COMMIT_MEM(memory, size)
+#endif
+
+#ifndef DSE_ARENA_FREE_MEMORY
+  #include <stdlib.h>
+  #define DSE_ARENA_FREE_MEMORY(memory) free(memory)
+#endif
+
+#ifndef DSE_ARENA_MEMSET
+  #include <string.h>
+  #define DSE_ARENA_MEMSET(memory, value, size) memset(memory, value, size)
+#endif
+
+typedef struct DSE_Arena DSE_Arena;
+struct DSE_Arena
 {
   DSE_Arena *previous;
   DSE_Arena *next;
@@ -45,13 +74,16 @@ void dse_pop_from_index(DSE_Arena *arena, u64 index);
 
 DSE_Arena* dse_create_arena(u64 capacity)
 {
-  DSE_Arena *arena = (DSE_Arena*)dse_alloc(sizeof(DSE_Arena), COMMIT_MEMORY);
+  // DSE_Arena *arena = (DSE_Arena*)dse_alloc(sizeof(DSE_Arena), COMMIT_MEMORY);
+  DSE_Arena *arena = (DSE_Arena*)DSE_ARENA_ALLOC_COMMIT(sizeof(DSE_Arena));
 
   arena->capacity = capacity;
-  arena->data     = (u8*) dse_alloc(capacity, RESERVE_MEMORY);
-  arena->freelist = (s64*)dse_alloc(capacity * sizeof(s64), COMMIT_MEMORY);
+  // arena->data     = (u8*) dse_alloc(capacity, RESERVE_MEMORY);
+  arena->data     = (u8*) DSE_ARENA_ALLOC_RESERVE(capacity);
+  arena->freelist = (s64*)DSE_ARENA_ALLOC_COMMIT(capacity * sizeof(s64));
 
-  dse_mem_set(arena->freelist, (s8)-1, capacity);
+  // dse_mem_set(arena->freelist, (s8)-1, capacity);
+  DSE_ARENA_MEMSET(arena->freelist, (s8)-1, capacity);
 
   return arena;
 }
@@ -62,24 +94,24 @@ void dse_destroy_arena(DSE_Arena *arena)
 
   for(; current_arena->previous != null;)
   {
-    dse_free_memory(current_arena->data);
-    __internal_is_freed(current_arena->data);
+    DSE_ARENA_FREE_MEMORY(current_arena->data);
+    // __internal_is_freed(current_arena->data);
 
-    dse_free_memory(current_arena->freelist);
-    __internal_is_freed(current_arena->freelist);
+    DSE_ARENA_FREE_MEMORY(current_arena->freelist);
+    // __internal_is_freed(current_arena->freelist);
 
     DSE_Arena *temp = current_arena;
     current_arena = current_arena->previous;
 
-    dse_free_memory(temp);
-    __internal_is_freed(temp);
+    DSE_ARENA_FREE_MEMORY(temp);
+    // __internal_is_freed(temp);
   }
 
-  dse_free_memory(current_arena->data);
-  __internal_is_freed(current_arena->data);
+  DSE_ARENA_FREE_MEMORY(current_arena->data);
+  // __internal_is_freed(current_arena->data);
 
-  dse_free_memory(current_arena);
-  __internal_is_freed(current_arena);
+  DSE_ARENA_FREE_MEMORY(current_arena);
+  // __internal_is_freed(current_arena);
 }
 
 void* dse_push_arena(DSE_Arena **arena, u64 size)
@@ -88,7 +120,8 @@ void* dse_push_arena(DSE_Arena **arena, u64 size)
 
   if(new_capacity <= (*arena)->capacity)
   {
-    dse_commit_memory((*arena)->data, size);
+    // dse_commit_memory((*arena)->data, size);
+    DSE_ARENA_COMMIT_MEM((*arena)->data, size);
     void *block = (*arena)->data + (*arena)->used;
     (*arena)->used += size;
     return block;

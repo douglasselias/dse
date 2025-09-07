@@ -209,6 +209,7 @@ bool dse_has_freed_memory(void *memory)
   return memory_info.State == MEM_FREE;
 }
 
+// TODO: Its not part of OS!
 void dse_mem_set(void *memory, s8 value, u64 size)
 {
   u8 *m = (u8*)memory;
