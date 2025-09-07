@@ -30,6 +30,8 @@ void* dse_mem_alloc(u64 capacity);
 void* dse_mem_realloc(void *old_memory, u64 new_capacity);
 void dse_free_memory(void *memory);
 bool dse_has_freed_memory(void *memory);
+void dse_mem_set(void *memory, s8 value, u64 size);
+void dse_mem_copy(void *destination, void *source, u64 size);
 
 #ifdef DSE_OS_IMPLEMENTATION
 
@@ -207,6 +209,27 @@ bool dse_has_freed_memory(void *memory)
   return memory_info.State == MEM_FREE;
 }
 
+void dse_mem_set(void *memory, s8 value, u64 size)
+{
+  u8 *m = (u8*)memory;
+
+  for(u64 i = 0; i < size; i++)
+  {
+    m[i] = value;
+  }
+}
+
+void dse_mem_copy(void *destination, void *source, u64 size)
+{
+  u8 *d = (u8*)destination;
+  u8 *s = (u8*)source;
+
+  for(u64 i = 0; i < size; i++)
+  {
+    d[i] = s[i];
+  }
+}
+
 #endif // DSE_OS_IMPLEMENTATION
 
 #ifdef DSE_OS_STRIP_PREFIX
@@ -228,6 +251,8 @@ bool dse_has_freed_memory(void *memory)
   #define mem_realloc            dse_mem_realloc
   #define free_memory            dse_free_memory
   #define has_freed_memory       dse_has_freed_memory
+  #define mem_set                dse_mem_set
+  #define mem_copy               dse_mem_copy
 #endif // DSE_OS_STRIP_PREFIX
 
 #endif // DSE_OS_H

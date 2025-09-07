@@ -9,58 +9,14 @@
 #define DSE_ARENA_IMPLEMENTATION
 #include "../arena/arena.h"
 
-#define DSE_DECLARE_ARRAY_FUNCTIONS(prefix, suffix, type)                       \
-                                                                                \
-typedef struct Array_##suffix Array_##suffix;                                   \
-struct Array_##suffix                                                           \
-{                                                                               \
-  u32 size;                                                                     \
-  u32 capacity;                                                                 \
-  type *data;                                                                   \
-};                                                                              \
-                                                                                \
-void prefix##destroy_array_##suffix(Array_##suffix *array)                      \
-{                                                                               \
-  array->capacity = 0;                                                          \
-  dse_free_memory(array->data);                                                 \
-  array->data = null;                                                           \
-}                                                                               \
-                                                                                \
-Array_##suffix prefix##create_array_##suffix(u32 capacity)                      \
-{                                                                               \
-  u32 MAX_CAPACITY = 0x80000000ULL; /* 2GB */                                   \
-                                                                                \
-  if(capacity < 1)            capacity = 1;                                     \
-  if(capacity > MAX_CAPACITY) capacity = MAX_CAPACITY;                          \
-                                                                                \
-  Array_##suffix array = {0};                                                   \
-  array.capacity = capacity;                                                    \
-  array.data     = dse_mem_alloc(sizeof(type) * capacity);                      \
-  return array;                                                                 \
-}                                                                               \
-                                                                                \
-void prefix##array_append_##suffix(Array_##suffix *array, type value)           \
-{                                                                               \
-  if(array->size + 1 > array->capacity)                                         \
-  {                                                                             \
-    array->capacity *= 2;                                                       \
-    array->data = dse_mem_realloc(array->data, sizeof(type) * array->capacity); \
-  }                                                                             \
-                                                                                \
-  array->data[array->size] = value;                                             \
-  array->size++;                                                                \
-}                                                                               \
-                                                                                \
-void prefix##array_remove_by_index_##suffix(Array_##suffix *array, u32 index)   \
-{                                                                               \
-  if(index >= array->size) return;                                              \
-                                                                                \
-  array->size--;                                                                \
-  for(u32 i = index; i < array->size; i++)                                      \
-  {                                                                             \
-    array->data[i] = array->data[i + 1];                                        \
-  }                                                                             \
-}                                                                               \
+#define DSE_DECLARE_ARRAY_FUNCTIONS(suffix, type)                     \
+                                                                      \
+typedef struct Array_##suffix Array_##suffix;                         \
+struct Array_##suffix                                                 \
+{                                                                     \
+  u32 size;                                                           \
+  type *data;                                                         \
+};                                                                    \
 
 #endif // DSE_ARRAY_H
 

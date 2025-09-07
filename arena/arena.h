@@ -49,7 +49,7 @@ DSE_Arena* dse_create_arena(u64 capacity)
   arena->data     = (u8*) dse_alloc(capacity, RESERVE_MEMORY);
   arena->freelist = (s64*)dse_alloc(capacity * sizeof(s64), COMMIT_MEMORY);
 
-  memset(arena->freelist, -1, capacity);
+  dse_mem_set(arena->freelist, (s8)-1, capacity);
 
   return arena;
 }
@@ -141,11 +141,12 @@ void dse_pop_from_index(DSE_Arena *arena, u64 index)
 #endif // DSE_ARENA_IMPLEMENTATION
 
 #ifdef DSE_ARENA_STRIP_PREFIX
-  #define Arena         DSE_Arena
-  #define create_arena  dse_create_arena
-  #define destroy_arena dse_destroy_arena
-  #define push_arena    dse_push_arena
-  #define pop_arena     dse_pop_arena
+  #define Arena          DSE_Arena
+  #define create_arena   dse_create_arena
+  #define destroy_arena  dse_destroy_arena
+  #define push_arena     dse_push_arena
+  #define pop_arena      dse_pop_arena
+  #define pop_from_index dse_pop_from_index
 #endif // DSE_ARENA_STRIP_PREFIX
 
 #endif // DSE_ARENA_H

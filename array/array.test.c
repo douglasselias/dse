@@ -15,7 +15,7 @@ void print_user(User user)
   printf("  %s, %s\n", user.name, user.email);
 }
 
-DSE_DECLARE_ARRAY_FUNCTIONS(, user, User)
+DSE_DECLARE_ARRAY_FUNCTIONS(user, User)
 
 void print_array_user(Array_user array)
 {
@@ -39,7 +39,7 @@ User users[] =
 void arena_push_user(Arena *arena, User user)
 {
   User *u = push_arena(&arena, sizeof(User));
-  memcpy(u, &user, sizeof(User));
+  dse_mem_copy(u, &user, sizeof(User));
 }
 
 Struct(UserList)
@@ -56,29 +56,77 @@ UserList create_user_list(Arena *arena)
   return user_list;
 }
 
+void pop_user(Arena *arena, u64 index)
+{
+  // TODO: Index can be out of bounds.
+  u64 size = sizeof(User);
+  u64 offset = size * index;
+
+  dse_mem_copy(arena->data + offset, arena->data + offset + size, size);
+  arena->used -= size;
+}
+
 int main()
 {
   Arena *arena = create_arena(sizeof(User) * 3);
 
   for(u32 i = 0; i < 3; i++)
   { 
-    // User *u = push_arena(&arena, sizeof(User));
-    // memcpy(u, &users[i], sizeof(User));
     arena_push_user(arena, users[i]);
   }
 
-  User *users_array = (User*)arena->data;
-  u64 size = arena->used / sizeof(User);
-  for(u64 i = 0; i < size; i++)
+  for(u64 i = 0; i < 3; i++)
   {
-    print_user(users_array[i]);
+    User *u = (User*)arena->data;
+    print_user(u[i]);
   }
 
-  UserList ul = create_user_list(arena);
-  for(u64 i = 0; i < ul.size; i++)
+  dse_pop_from_index(arena, sizeof(User));
+  arena_push_user(arena, users[0]);
+
+  puts("Removed:");
+  for(u64 i = 0; i < 3; i++)
   {
-    print_user(users_array[i]);
+    User *u = (User*)arena->data;
+    print_user(u[i]);
   }
+
+  pop_user(arena, 1);
+
+  puts("Removed (again):");
+  u64 s = arena->used / sizeof(User);
+  for(u64 i = 0; i < s; i++)
+  {
+    User *u = (User*)arena->data;
+    print_user(u[i]);
+  }
+
+  // Array_user au = {};
+  // au.size = 3;
+  // au.data = arena->data;
+
+  // array_remove_by_index_user(&au, 1);
+  // puts("Removed:");
+
+  // for(u64 i = 0; i < au.size; i++)
+  // {
+  //   print_user(au.data[i]);
+  // }
+
+
+
+  // User *users_array = (User*)arena->data;
+  // u64 size = arena->used / sizeof(User);
+  // for(u64 i = 0; i < size; i++)
+  // {
+  //   print_user(users_array[i]);
+  // }
+
+  // UserList ul = create_user_list(arena);
+  // for(u64 i = 0; i < ul.size; i++)
+  // {
+  //   print_user(users_array[i]);
+  // }
   
 
   // Array_user users = create_array_user((u32)-1);
