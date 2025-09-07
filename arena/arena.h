@@ -29,6 +29,8 @@ void       dse_destroy_arena(DSE_Arena *arena);
 void* dse_push_arena(DSE_Arena **arena, u64 size);
 void  dse_pop_arena (DSE_Arena **arena, u64 size);
 
+void dse_pop_from_index(DSE_Arena *arena, u64 index);
+
 #ifdef DSE_ARENA_IMPLEMENTATION
 
 #define __internal_is_freed(memory)                                   \
@@ -133,6 +135,7 @@ void dse_pop_arena(DSE_Arena **arena, u64 size)
   }
 }
 
+// TODO: Maybe add a size?
 void dse_pop_from_index(DSE_Arena *arena, u64 index)
 {
   arena->freelist[arena->freelist_index++] = index;

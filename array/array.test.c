@@ -2,39 +2,17 @@
 #define DSE_ARENA_STRIP_PREFIX
 #include "../arena/arena.h"
 
-#include "array.h"
-
 Struct(User)
 {
   char *name;
   char *email;
 };
 
-void print_user(User user)
+Arena* arena_create_user(u64 size)
 {
-  printf("  %s, %s\n", user.name, user.email);
+  Arena *arena = create_arena(sizeof(User) * size);
+  return arena;
 }
-
-DSE_DECLARE_ARRAY_FUNCTIONS(user, User)
-
-void print_array_user(Array_user array)
-{
-  printf("\n[\n");
-
-  for(u32 i = 0; i < array.size; i++)
-  {
-    print_user(array.data[i]);
-  }
-
-  printf("]\n");
-}
-
-User users[] =
-{
-  {"one",   "one@email.com"},
-  {"two",   "two@email.com"},
-  {"three", "three@email.com"},
-};
 
 void arena_push_user(Arena *arena, User user)
 {
@@ -42,21 +20,7 @@ void arena_push_user(Arena *arena, User user)
   dse_mem_copy(u, &user, sizeof(User));
 }
 
-Struct(UserList)
-{
-  u64  size;
-  User *users;
-};
-
-UserList create_user_list(Arena *arena)
-{
-  UserList user_list = {0};
-  user_list.size  = arena->used / sizeof(User);
-  user_list.users = (User*)arena->data;
-  return user_list;
-}
-
-void pop_user(Arena *arena, u64 index)
+void arena_pop_user(Arena *arena, u64 index)
 {
   // TODO: Index can be out of bounds.
   u64 size = sizeof(User);
@@ -66,85 +30,85 @@ void pop_user(Arena *arena, u64 index)
   arena->used -= size;
 }
 
+u64 arena_size_user(Arena *arena)
+{
+  u64 size = arena->used / sizeof(User);
+  return size;
+}
+
+User* arena_pointer_user(Arena *arena)
+{
+  User *user = (User*)arena->data;
+  return user;
+}
+
+void arena_user_iterate(Arena *arena, void proc(User *user))
+{
+  u64 size = arena_size_user(arena);
+  for(u64 i = 0; i < size; i++)
+  {
+    User *user = arena_pointer_user(arena);
+    proc(user);
+  }
+}
+
+// User defined
+void print_user(User user)
+{
+  printf("  %s, %s\n", user.name, user.email);
+}
+
+void print_user_ptr(User *user)
+{
+  printf("  %s, %s\n", user->name, user->email);
+}
+
+void print_users(Arena *arena)
+{
+  printf("\n[\n");
+
+  u64 size = arena_size_user(arena);
+  for(u64 i = 0; i < size; i++)
+  {
+    print_user(arena_pointer_user(arena)[i]);
+  }
+
+  printf("]\n");
+}
+
+#define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
+
 int main()
 {
-  Arena *arena = create_arena(sizeof(User) * 3);
+  User users[] =
+  {
+    {"uno ",   "one@email.com"},
+    {"dos ",   "two@email.com"},
+    {"tres", "three@email.com"},
+  };
+  u64 users_size = ARRAY_SIZE(users);
 
-  for(u32 i = 0; i < 3; i++)
+  Arena *arena = arena_create_user(users_size);
+
+  for(u32 i = 0; i < users_size; i++)
   { 
     arena_push_user(arena, users[i]);
   }
 
-  for(u64 i = 0; i < 3; i++)
-  {
-    User *u = (User*)arena->data;
-    print_user(u[i]);
-  }
+  print_users(arena);
 
   dse_pop_from_index(arena, sizeof(User));
   arena_push_user(arena, users[0]);
 
+  puts("Freelist:");
+  print_users(arena);
+
+  arena_pop_user(arena, 1);
+
   puts("Removed:");
-  for(u64 i = 0; i < 3; i++)
-  {
-    User *u = (User*)arena->data;
-    print_user(u[i]);
-  }
-
-  pop_user(arena, 1);
-
-  puts("Removed (again):");
-  u64 s = arena->used / sizeof(User);
-  for(u64 i = 0; i < s; i++)
-  {
-    User *u = (User*)arena->data;
-    print_user(u[i]);
-  }
-
-  // Array_user au = {};
-  // au.size = 3;
-  // au.data = arena->data;
-
-  // array_remove_by_index_user(&au, 1);
-  // puts("Removed:");
-
-  // for(u64 i = 0; i < au.size; i++)
-  // {
-  //   print_user(au.data[i]);
-  // }
-
-
-
-  // User *users_array = (User*)arena->data;
-  // u64 size = arena->used / sizeof(User);
-  // for(u64 i = 0; i < size; i++)
-  // {
-  //   print_user(users_array[i]);
-  // }
-
-  // UserList ul = create_user_list(arena);
-  // for(u64 i = 0; i < ul.size; i++)
-  // {
-  //   print_user(users_array[i]);
-  // }
-  
-
-  // Array_user users = create_array_user((u32)-1);
-
-  // array_append_user(&users, (User){"one",   "one@email.com"});
-  // array_append_user(&users, (User){"two",   "two@email.com"});
-  // array_append_user(&users, (User){"three", "three@email.com"});
-  
-  // array_remove_by_index_user(&users, 1);
-  
-  // print_array_user(users);
-
-  // users.size = 0;
-  // printf("Size after reset: %d\n", users.size);
-  // print_array_user(users);
-
-  // destroy_array_user(&users);
-  // printf("Destroyed? %s\n", users.data == null ? "Yes" : "No");
+  // print_users(arena);
+  // arena_user_iterate(arena, print_user);
+  arena_user_iterate(arena, print_user_ptr);
 
   return 0;
 }
