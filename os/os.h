@@ -230,6 +230,23 @@ void dse_mem_copy(void *destination, void *source, u64 size)
   }
 }
 
+bool dse_compare_memory(void *a, void *b, u64 size)
+{
+  bool result = true;
+
+  if(size == 0) result = false;
+
+  for(u64 offset = 0; offset < size; offset++)
+  {
+    if(*((u8*)a + offset) != *((u8*)b + offset))
+    {
+      result = false;
+    }
+  }
+
+  return result;
+}
+
 #endif // DSE_OS_IMPLEMENTATION
 
 #ifdef DSE_OS_STRIP_PREFIX
@@ -253,6 +270,7 @@ void dse_mem_copy(void *destination, void *source, u64 size)
   #define has_freed_memory       dse_has_freed_memory
   #define mem_set                dse_mem_set
   #define mem_copy               dse_mem_copy
+  #define compare_memory         dse_compare_memory
 #endif // DSE_OS_STRIP_PREFIX
 
 #endif // DSE_OS_H
