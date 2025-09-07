@@ -1,37 +1,70 @@
 #ifndef DSE_OS_H
 #define DSE_OS_H
 
-#include "../base_types.h"
+#include <stdbool.h>
+#include <stdint.h>
 
-#include <stdio.h>
+typedef  uint8_t  s8;
+typedef  int64_t s64;
+typedef  uint8_t  u8;
+typedef uint32_t u32;
+typedef uint64_t u64;
 
+#define null NULL
+
+// Threads //
 #define INFINITE_TIMEOUT 0xFFFFFFFF
 
 #define dse_thread_handle void*
 typedef void dse_thread_proc(void *args);
 
-Enum(DSE_AllocType)
+u32 dse_count_threads();
+
+dse_thread_handle dse_create_thread(dse_thread_proc *thread_proc, void *args);
+void dse_wait_for_thread(dse_thread_handle handle, u32 timeout_ms);
+void dse_wait_for_all_threads(dse_thread_handle *handles, u64 threads_count, u32 timeout_ms);
+// End Threads //
+
+// Memory //
+
+typedef enum DSE_AllocationType DSE_AllocationType;
+enum DSE_AllocationType
 {
+  // This is actually a Window specific value.
+  // TODO: Would be better to be something else to be crossplatform?
   RESERVE_MEMORY = 0x00002000,
   COMMIT_MEMORY  = 0x00001000,
 };
 
-u8 dse_generate_random_number();
-u32 dse_count_threads();
-dse_thread_handle dse_create_thread(dse_thread_proc *thread_proc, void *args);
-void dse_wait_for_thread(dse_thread_handle handle, u32 timeout_ms);
-void dse_wait_for_all_threads(dse_thread_handle *handles, u64 threads_count, u32 timeout_ms);
-void dse_atomic_increment(s64 *number);
-u64 dse_get_cpu_timer();
-void dse_list_files_from_dir(char *path);
-void* dse_alloc(u64 capacity, DSE_AllocType allocation_type);
+void* dse_alloc(u64 capacity, DSE_AllocationType allocation_type);
 void dse_commit_memory(void *memory, u64 capacity);
 void* dse_mem_alloc(u64 capacity);
 void* dse_mem_realloc(void *old_memory, u64 new_capacity);
 void dse_free_memory(void *memory);
 bool dse_has_freed_memory(void *memory);
+// End Memory //
+
+
+// Memory (move to another file) //
 void dse_mem_set(void *memory, s8 value, u64 size);
 void dse_mem_copy(void *destination, void *source, u64 size);
+// End Memory (move to another file) //
+
+// RNG //
+u8 dse_generate_random_number();
+// End RNG //
+
+// Atomics //
+void dse_atomic_increment(s64 *number);
+// End Atomics //
+
+// Timer //
+u64 dse_get_cpu_timer();
+// End Timer //
+
+// File system //
+void dse_list_files_from_dir(char *path);
+// End File system //
 
 #ifdef DSE_OS_IMPLEMENTATION
 
@@ -49,7 +82,7 @@ u8 dse_generate_random_number()
   
   if(status != 0)
   {
-    printf("[ERROR]: Couldn't generate a random number, status code 0x%08x\n", status);
+    // printf("[ERROR]: Couldn't generate a random number, status code 0x%08x\n", status);
   }
 
   return buffer[0];
@@ -112,7 +145,7 @@ u64 depth = 0;
 void dse_list_files_from_dir(char *path)
 {
   char search_path[MAX_PATH] = {0};
-  sprintf(search_path, "%s\\*", path);
+  // sprintf(search_path, "%s\\*", path);
 
   WIN32_FIND_DATA ffd;
   HANDLE find_file_handle = FindFirstFile(search_path, &ffd);
@@ -130,12 +163,12 @@ void dse_list_files_from_dir(char *path)
       if(strcmp(filename, "..") == 0) continue;
       char dir_buffer[MAX_PATH] = {0};
       // sprintf(dir_buffer, "%s\\%s", path, filename);
-      sprintf(dir_buffer, "%s", filename);
+      // sprintf(dir_buffer, "%s", filename);
       for(u64 i = 0; i < depth; i++)
       {
-        printf("\t");
+        // printf("\t");
       }
-      printf("\t%s\n", dir_buffer);
+      // printf("\t%s\n", dir_buffer);
 
       depth++;
       dse_list_files_from_dir(filename);
@@ -144,19 +177,19 @@ void dse_list_files_from_dir(char *path)
     {
       char file_buffer[MAX_PATH] = {0};
       // sprintf(file_buffer, "%s/%s", path, filename);
-      sprintf(file_buffer, "%s", filename);
+      // sprintf(file_buffer, "%s", filename);
       for(u64 i = 0; i < depth; i++)
       {
-        printf("\t");
+        // printf("\t");
       }
-      printf("\t%s\n", file_buffer);
+      // printf("\t%s\n", file_buffer);
     }
   } while(FindNextFile(find_file_handle, &ffd) != 0);
 
   depth--;
 }
 
-void* dse_alloc(u64 capacity, DSE_AllocType allocation_type)
+void* dse_alloc(u64 capacity, DSE_AllocationType allocation_type)
 {
   // TODO: Docs recommend to use both reserve and commit for allocation. But it seems to work fine if its called with just commit.
   return VirtualAlloc(null, capacity, allocation_type, PAGE_READWRITE);
@@ -187,7 +220,7 @@ void* dse_mem_realloc(void *old_memory, u64 new_capacity)
   }
   else
   {
-    puts("Failed to query memory info.");
+    // puts("Failed to query memory info.");
   }
 
   memcpy(new_memory, old_memory, old_size);

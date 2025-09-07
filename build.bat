@@ -6,7 +6,7 @@ where /q cl || call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTo
 rmdir /S /Q .\build
 mkdir build
 
-set main_file=array\array.test.c
+set main_file=os\os.test.c
 @REM set main_file=arena\arena.test.c
 @REM set main_file=string8\string8.test.c
 @REM set main_file=main.cpp

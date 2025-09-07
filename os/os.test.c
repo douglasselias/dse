@@ -1,7 +1,8 @@
 #define DSE_OS_IMPLEMENTATION
 #define DSE_OS_STRIP_PREFIX
-#include <stdio.h>
 #include "os.h"
+
+#include <stdio.h>
 
 void custom_thread_proc(void *args)
 {

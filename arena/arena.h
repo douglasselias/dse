@@ -21,9 +21,9 @@ typedef uint64_t u64;
   #define DSE_ARENA_ALLOC_RESERVE(size) calloc(1, size)
 #endif
 
-#ifndef DSE_ARENA_COMMIT_MEM
+#ifndef DSE_ARENA_COMMIT_MEMORY
   #include <stdlib.h>
-  #define DSE_ARENA_COMMIT_MEM(memory, size)
+  #define DSE_ARENA_COMMIT_MEMORY(memory, size)
 #endif
 
 #ifndef DSE_ARENA_FREE_MEMORY
@@ -45,34 +45,28 @@ struct DSE_Arena
   s64 freelist_index;
   s64 used;     // In bytes
   s64 capacity; // In bytes
-  u8 *data;
+  u8  *data;
 
   // TODO:
   // u64 stride;     ?
   // s64 bytes_used; ?
 };
 
-DSE_Arena* dse_create_arena (u64 capacity);
-void       dse_destroy_arena(DSE_Arena *arena);
+DSE_Arena* dse_arena_create (u64 capacity);
+void       dse_arena_destroy(DSE_Arena *arena);
 
-void* dse_push_arena(DSE_Arena **arena, u64 size);
-void  dse_pop_arena (DSE_Arena **arena, u64 size);
+void* dse_arena_push(DSE_Arena **arena, u64 size);
+void  dse_arena_pop (DSE_Arena **arena, u64 size);
 
-void dse_pop_from_index(DSE_Arena *arena, u64 index);
+// void dse_pop_from_index(DSE_Arena *arena, u64 index);
+
+// void dse_arena_pop_byte_from_index(DSE_Arena *arena, u64 index);
+// void dse_arena_pop_bytes_from_index(DSE_Arena *arena, u64 index, u64 size);
+// void dse_arena_pop_from_index_with_memory_move(DSE_Arena *arena, u64 index, u64 size);
 
 #ifdef DSE_ARENA_IMPLEMENTATION
 
-#define __internal_is_freed(memory)                                   \
-  do                                                                  \
-  {                                                                   \
-    u64 line = __LINE__;                                              \
-    if(!dse_has_freed_memory(memory))                                 \
-    {                                                                 \
-      printf("Memory not freed (%s) at line: %lld\n", #memory, line); \
-    }                                                                 \
-  } while(0)                                                          \
-
-DSE_Arena* dse_create_arena(u64 capacity)
+DSE_Arena* dse_arena_create(u64 capacity)
 {
   // DSE_Arena *arena = (DSE_Arena*)dse_alloc(sizeof(DSE_Arena), COMMIT_MEMORY);
   DSE_Arena *arena = (DSE_Arena*)DSE_ARENA_ALLOC_COMMIT(sizeof(DSE_Arena));
@@ -88,7 +82,7 @@ DSE_Arena* dse_create_arena(u64 capacity)
   return arena;
 }
 
-void dse_destroy_arena(DSE_Arena *arena)
+void dse_arena_destroy(DSE_Arena *arena)
 {
   DSE_Arena *current_arena = arena;
 
@@ -114,7 +108,7 @@ void dse_destroy_arena(DSE_Arena *arena)
   // __internal_is_freed(current_arena);
 }
 
-void* dse_push_arena(DSE_Arena **arena, u64 size)
+void* dse_arena_push(DSE_Arena **arena, u64 size)
 {
   s64 new_capacity = (*arena)->used + (s64)size;
 
@@ -141,11 +135,11 @@ void* dse_push_arena(DSE_Arena **arena, u64 size)
     (*arena)->next = new_arena;
     new_arena->previous = *arena;
     *arena = new_arena;
-    return dse_push_arena(arena, size);
+    return dse_arena_push(arena, size);
   }
 }
 
-void dse_pop_arena(DSE_Arena **arena, u64 size)
+void dse_arena_pop(DSE_Arena **arena, u64 size)
 {
   s64 new_capacity = (*arena)->used - (s64)size;
 
@@ -159,7 +153,7 @@ void dse_pop_arena(DSE_Arena **arena, u64 size)
     {
       s64 remainder = size - (*arena)->used;
       *arena = (*arena)->previous;
-      dse_pop_arena(arena, remainder);
+      dse_arena_pop(arena, remainder);
     }
     else
     {
@@ -168,21 +162,20 @@ void dse_pop_arena(DSE_Arena **arena, u64 size)
   }
 }
 
-// TODO: Maybe add a size?
-void dse_pop_from_index(DSE_Arena *arena, u64 index)
-{
-  arena->freelist[arena->freelist_index++] = index;
-}
+// void dse_pop_from_index(DSE_Arena *arena, u64 index)
+// {
+//   arena->freelist[arena->freelist_index++] = index;
+// }
 
 #endif // DSE_ARENA_IMPLEMENTATION
 
 #ifdef DSE_ARENA_STRIP_PREFIX
   #define Arena          DSE_Arena
-  #define create_arena   dse_create_arena
-  #define destroy_arena  dse_destroy_arena
-  #define push_arena     dse_push_arena
-  #define pop_arena      dse_pop_arena
-  #define pop_from_index dse_pop_from_index
+  #define arena_create   dse_arena_create
+  #define arena_destroy  dse_arena_destroy
+  #define arena_push     dse_arena_push
+  #define arena_pop      dse_arena_pop
+  // #define pop_from_index dse_pop_from_index
 #endif // DSE_ARENA_STRIP_PREFIX
 
 #endif // DSE_ARENA_H

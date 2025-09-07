@@ -1,88 +1,93 @@
-#define DSE_ARENA_IMPLEMENTATION
-#define DSE_ARENA_STRIP_PREFIX
-#include "arena.h"
-
 #define DSE_OS_IMPLEMENTATION
 #include "../os/os.h"
 
 #define DSE_ARENA_ALLOC_COMMIT(size)          dse_alloc(size, COMMIT_MEMORY)
 #define DSE_ARENA_ALLOC_RESERVE(size)         dse_alloc(size, RESERVE_MEMORY)
+#define DSE_ARENA_COMMIT_MEMORY(memory, size) dse_commit_memory(memory, size)
 #define DSE_ARENA_FREE_MEMORY(memory)         dse_free_memory(memory)
 #define DSE_ARENA_MEMSET(memory, value, size) dse_mem_set(memory, value, size)
 
+#define DSE_ARENA_IMPLEMENTATION
+#define DSE_ARENA_STRIP_PREFIX
+#include "arena.h"
+
 #include <stdio.h>
+
+#define MEMORY_FREED_CHECK(has_freed_memory_proc, memory)                                   \
+  do                                                                  \
+  {                                                                   \
+    u64 line = __LINE__;                                              \
+    if(!has_freed_memory_proc(memory))                                \
+    {                                                                 \
+      printf("Memory not freed (%s) at line: %lld\n", #memory, line); \
+    }                                                                 \
+  } while(0)                                                          \
 
 typedef struct Entity Entity;
 struct Entity
 {
-  u64 id;
+  u64  id;
   char *name;
-  u64 x, y;
 };
 
 Arena* arena_create_entity(u64 size)
 {
-  Arena *arena = create_arena(sizeof(Entity) * size);
+  Arena *arena = dse_arena_create(sizeof(Entity) * size);
   return arena;
 }
 
-void arena_push_user(Arena *arena, User user)
+void arena_push_entity(Arena *arena, Entity entity)
 {
-  User *u = push_arena(&arena, sizeof(User));
-  dse_mem_copy(u, &user, sizeof(User));
+  Entity *e = arena_push(&arena, sizeof(Entity));
+  dse_mem_copy(e, &user, sizeof(Entity));
 }
 
-void arena_pop_user(Arena *arena, u64 index)
+void arena_pop_entity(Arena *arena, u64 index)
 {
   // TODO: Index can be out of bounds.
-  u64 size = sizeof(User);
+  u64 size = sizeof(Entity);
   u64 offset = size * index;
 
   dse_mem_copy(arena->data + offset, arena->data + offset + size, size);
   arena->used -= size;
 }
 
-u64 arena_size_user(Arena *arena)
+u64 arena_size_entity(Arena *arena)
 {
-  u64 size = arena->used / sizeof(User);
+  u64 size = arena->used / sizeof(Entity);
   return size;
 }
 
-User* arena_pointer_user(Arena *arena)
+Entity* arena_pointer_entity(Arena *arena)
 {
-  User *user = (User*)arena->data;
-  return user;
+  Entity *entity = (Entity*)arena->data;
+  return entity;
 }
 
-void arena_user_iterate(Arena *arena, void proc(User *user))
+void arena_iterate_entities(Arena *arena, void proc(Entity *entity))
 {
-  u64 size = arena_size_user(arena);
+  u64 size = arena_size_entity(arena);
   for(u64 i = 0; i < size; i++)
   {
-    User *user = arena_pointer_user(arena);
-    proc(user);
+    Entity *entity = arena_pointer_entity(arena);
+    proc(entity);
   }
 }
 
-// User defined
-void print_user(User user)
+// User defined //
+void print_ptr_entity(Entity *entity)
 {
-  printf("  %s, %s\n", user.name, user.email);
+  printf("  %lld, %s\n", entity->id, entity->name);
 }
 
-void print_user_ptr(User *user)
-{
-  printf("  %s, %s\n", user->name, user->email);
-}
-
-void print_users(Arena *arena)
+void print_entities(Arena *arena)
 {
   printf("\n[\n");
 
-  u64 size = arena_size_user(arena);
+  u64 size = arena_size_entity(arena);
   for(u64 i = 0; i < size; i++)
   {
-    print_user(arena_pointer_user(arena)[i]);
+    print_ptr_entity(arena_pointer_entity(arena));
   }
 
   printf("]\n");
@@ -112,35 +117,35 @@ s32 arena_tests()
 
   // destroy_arena(arena);
 
-   User users[] =
+  Entity entities[] =
   {
-    {"uno ",   "one@email.com"},
-    {"dos ",   "two@email.com"},
-    {"tres", "three@email.com"},
+    {10, "player"},
+    {20, "enemy"},
+    {30, "floor"},
   };
-  u64 users_size = ARRAY_SIZE(users);
+  u64 entities_size = ARRAY_SIZE(entities);
 
-  Arena *arena = arena_create_user(users_size);
+  Arena *arena = arena_create_entity(entities);
 
   for(u32 i = 0; i < users_size; i++)
   { 
-    arena_push_user(arena, users[i]);
+    arena_push_entity(arena, entities[i]);
   }
 
-  print_users(arena);
+  print_entities(arena);
 
-  dse_pop_from_index(arena, sizeof(User));
-  arena_push_user(arena, users[0]);
+  dse_pop_from_index(arena, sizeof(Entity));
+  arena_push_entity(arena, entities[0]);
 
   puts("Freelist:");
-  print_users(arena);
+  print_entities(arena);
 
   arena_pop_user(arena, 1);
 
   puts("Removed:");
-  // print_users(arena);
+  // print_entities(arena);
   // arena_user_iterate(arena, print_user);
-  arena_user_iterate(arena, print_user_ptr);
+  arena_user_iterate(arena, print_pointer_entity);
 
   return 0;
 }
