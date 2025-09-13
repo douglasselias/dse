@@ -427,7 +427,7 @@ s64 dse_string_to_int(DSE_String8 string)
     if('0' <= c && c <= '9')
     {
       result *= 10;
-      result += c - 48;
+      result += c - '0';
     }
   }
 
@@ -437,7 +437,6 @@ s64 dse_string_to_int(DSE_String8 string)
 void dse_slugify(DSE_String8 string)
 {
   DSE_String8 s = dse_trim(string);
-  printf("Trimmed: |%s|\n", s.text);
   dse_string_to_lowercase(s);
 
   for(u64 i = 0; i < s.size; i++)
